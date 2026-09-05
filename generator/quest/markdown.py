@@ -60,6 +60,16 @@ def _format_rewards(
     return guaranteed, random
 
 
+def _quest_description(quest: Quest) -> str:
+    description = f"{quest.title} Quest"
+    summary = quest.summary.strip()
+
+    if summary:
+        description += f" — {summary}"
+
+    return description
+
+
 def _write_quest_info(
     lines: list[str],
     quest: Quest,
@@ -165,6 +175,7 @@ def _write_steps(
 def _write_front_matter(
     lines: list[str],
     title: str,
+    description: str | None = None,
     parent: str | None = None,
     parent_url: str | None = None,
     grand_parent: str | None = None,
@@ -175,6 +186,14 @@ def _write_front_matter(
             "---",
             "layout: default",
             f"title: {json.dumps(title)}",
+        ]
+    )
+
+    if description:
+        lines.append(f"description: {json.dumps(description)}")
+
+    lines.extend(
+        [
             *navigation_metadata(
                 parent=parent,
                 parent_path=parent_url,
@@ -201,6 +220,7 @@ def _write_quest_page(
     _write_front_matter(
         lines,
         quest.title,
+        description=_quest_description(quest),
         parent=parent,
         parent_url=parent_url,
     )
