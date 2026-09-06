@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from generator.icon import copy_icon
-
 
 def _render_group(group: dict) -> list[str]:
     """Render one generator group."""
@@ -58,11 +56,6 @@ def write_index_page(
 ) -> None:
     """Write the root documentation index."""
     output.parent.mkdir(parents=True, exist_ok=True)
-
-    copy_icon(
-        logo,
-        output.parent / "assets",
-    )
 
     version = (
         (output.parent.parent / "assets" / "version")

@@ -27,11 +27,10 @@ def main() -> None:
     clean_output()
     icon_index = icon.build_icon_index(ASSETS)
 
-    icon.copy_icon(
-        ASSETS / "favicon.ico",
-        ICON_OUT,
+    icon.copy_site_assets(
+        ASSETS,
+        DOCS,
     )
-
     generators = (
         item_generator.generate,
         quest_generator.generate,
