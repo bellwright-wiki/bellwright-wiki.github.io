@@ -70,6 +70,10 @@ def _quest_description(quest: Quest) -> str:
     return description
 
 
+def _category_description(title: str) -> str:
+    return f"Quests - {title} Category"
+
+
 def _write_quest_info(
     lines: list[str],
     quest: Quest,
@@ -249,6 +253,7 @@ def _write_page(
     lines: list[str],
     parent: str | None = None,
     parent_url: str | None = None,
+    description: str | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -257,6 +262,7 @@ def _write_page(
     _write_front_matter(
         content,
         title,
+        description=description,
         parent=parent,
         parent_url=parent_url,
     )
@@ -362,4 +368,5 @@ def write_category(
         docs / f"{category_slug}.md",
         tree.name,
         index_lines,
+        description=_category_description(tree.name),
     )
