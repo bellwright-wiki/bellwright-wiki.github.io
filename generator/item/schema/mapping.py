@@ -66,23 +66,34 @@ def _category_names(
 def _group_names(
     index: Any,
     category_node: Any,
-) -> tuple[str, ...]:
-    names: list[str] = []
+) -> tuple[tuple[str, ...], ...]:
+    groups: list[tuple[str, ...]] = []
 
-    for group_key in getattr(category_node, "group_ancestors", ()):
-        group = getattr(index, "nodes", {}).get(group_key)
+    group_ancestors = getattr(
+        category_node,
+        "group_ancestors",
+        (),
+    )
+
+    nodes = getattr(index, "nodes", {})
+
+    for group_key in reversed(group_ancestors):
+        group = nodes.get(group_key)
 
         if group is None:
             continue
 
-        names.extend(
-            (
-                str(getattr(group, "class_name", "") or ""),
-                str(getattr(group, "title", "") or ""),
-            )
+        names = (
+            str(getattr(group, "class_name", "") or ""),
+            str(getattr(group, "title", "") or ""),
         )
 
-    return tuple(_normalize(name) for name in names if name)
+        normalized = tuple(_normalize(name) for name in names if name)
+
+        if normalized:
+            groups.append(normalized)
+
+    return tuple(groups)
 
 
 def _find_schema(
@@ -111,12 +122,16 @@ def _autodiscovered_schema(
     if schema is not None:
         return schema
 
-    return _find_schema(
-        _group_names(
-            index,
-            category_node,
-        )
-    )
+    for names in _group_names(
+        index,
+        category_node,
+    ):
+        schema = _find_schema(names)
+
+        if schema is not None:
+            return schema
+
+    return None
 
 
 def _schema_exists(module_name: str) -> bool:
@@ -148,7 +163,14 @@ def schema_module(
     )
 
     if module_name is None:
-        class_name = str(getattr(category_node, "class_name", "") or "")
+        class_name = str(
+            getattr(
+                category_node,
+                "class_name",
+                "",
+            )
+            or ""
+        )
         module_name = CATEGORY_SCHEMA_OVERRIDES.get(class_name)
 
     if module_name:
