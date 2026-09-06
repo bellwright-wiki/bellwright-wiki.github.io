@@ -43,6 +43,18 @@ def render_table(
     return lines
 
 
+def _description(
+    title: str,
+    parent: str | None = None,
+) -> str:
+    description = f"{title} Category"
+
+    if parent:
+        description = f"{parent} - {description}"
+
+    return description
+
+
 def _front_matter(
     title: str,
     *,
@@ -55,6 +67,7 @@ def _front_matter(
         "---",
         "layout: default",
         f"title: {json.dumps(title)}",
+        f"description: {json.dumps(_description(title, parent))}",
         *navigation_metadata(
             parent=parent,
             parent_path=parent_path,
@@ -143,9 +156,14 @@ def write_page(
 def render_tree_page(
     title: str,
     tree: list[str],
+    *,
+    parent: str | None = None,
 ) -> str:
     lines = [
-        *_front_matter(title),
+        *_front_matter(
+            title,
+            parent=parent,
+        ),
         f"# {title}",
         "",
         *tree,
@@ -159,6 +177,8 @@ def write_tree_page(
     output: Path,
     title: str,
     tree: list[str],
+    *,
+    parent: str | None = None,
 ):
     output.parent.mkdir(
         parents=True,
@@ -169,6 +189,7 @@ def write_tree_page(
         render_tree_page(
             title,
             tree,
+            parent=parent,
         ),
         encoding="utf-8",
     )
