@@ -21,6 +21,8 @@ CATEGORY_GROUP_CLASSES = frozenset(
     }
 )
 
+CATEGORY_BASE_CLASSES = CATEGORY_CLASSES | CATEGORY_GROUP_CLASSES
+
 CATEGORIES_GAME_PATH = "/Game/Mist/Data/Items/Categories/"
 
 
@@ -67,6 +69,76 @@ class CategoryIndex:
             ]
         ] = []
 
+        class_cache: dict[Path, dict[str, dict[str, Any]]] = {}
+        inheritance_cache: dict[tuple[Path, str], str] = {}
+
+        def class_objects(path: Path) -> dict[str, dict[str, Any]]:
+            cached = class_cache.get(path)
+
+            if cached is not None:
+                return cached
+
+            result = {
+                str(obj.get("Name")): obj
+                for obj in assets.objects(path)
+                if obj.get("Type") == "BlueprintGeneratedClass"
+                and isinstance(obj.get("Name"), str)
+            }
+
+            class_cache[path] = result
+            return result
+
+        def category_base_class(
+            path: Path,
+            class_name: str,
+            seen: set[tuple[Path, str]] | None = None,
+        ) -> str:
+            cache_key = (path, class_name)
+
+            if cache_key in inheritance_cache:
+                return inheritance_cache[cache_key]
+
+            if seen is None:
+                seen = set()
+
+            if cache_key in seen:
+                return ""
+
+            seen.add(cache_key)
+
+            obj = class_objects(path).get(class_name)
+
+            if obj is None:
+                inheritance_cache[cache_key] = ""
+                return ""
+
+            direct_base = superstruct(obj)
+
+            if direct_base in CATEGORY_BASE_CLASSES:
+                inheritance_cache[cache_key] = direct_base
+                return direct_base
+
+            parent = super_class(obj)
+
+            if not parent:
+                inheritance_cache[cache_key] = ""
+                return ""
+
+            parent_path = assets.game_object(parent[0])
+
+            if parent_path is None:
+                inheritance_cache[cache_key] = ""
+                return ""
+
+            result = category_base_class(
+                parent_path,
+                parent[1],
+                seen,
+            )
+
+            inheritance_cache[cache_key] = result
+            return result
+
         for path in assets.paths:
             try:
                 path.relative_to(assets.categories_root)
@@ -79,7 +151,11 @@ class CategoryIndex:
                 (
                     obj
                     for obj in objects
-                    if superstruct(obj) in (CATEGORY_CLASSES | CATEGORY_GROUP_CLASSES)
+                    if isinstance(obj.get("Name"), str)
+                    and category_base_class(
+                        path,
+                        str(obj["Name"]),
+                    )
                 ),
                 None,
             )
@@ -109,7 +185,10 @@ class CategoryIndex:
             class_name = str(class_obj.get("Name") or "").removesuffix("_C")
 
             parent_path = parent_for(cdo or {})
-            is_group = superstruct(class_obj) in CATEGORY_GROUP_CLASSES
+            base_class = category_base_class(
+                path,
+                str(class_obj.get("Name") or ""),
+            )
 
             pending.append(
                 (
@@ -117,7 +196,7 @@ class CategoryIndex:
                     asset_path,
                     class_name,
                     parent_path,
-                    is_group,
+                    base_class in CATEGORY_GROUP_CLASSES,
                     title,
                 )
             )
@@ -175,11 +254,6 @@ class CategoryIndex:
 
             depth[node.key] = value
 
-        # Build descendant category lists bottom-up.
-        #
-        # Every category includes itself, and also inherits
-        # descendant categories from child nodes. Groups only
-        # inherit their children's categories.
         for node in sorted(
             self.nodes.values(),
             key=lambda value: depth[value.key],
@@ -310,6 +384,43 @@ def superstruct(
     ref = reference(obj.get("SuperStruct"))
 
     return ref.rsplit("/", 1)[-1] if ref else ""
+
+
+def super_class(
+    obj: dict[str, Any],
+) -> tuple[str, str] | None:
+    value = obj.get("Super")
+
+    if not isinstance(value, dict):
+        return None
+
+    object_path = value.get("ObjectPath")
+
+    if not isinstance(object_path, str) or not object_path.startswith("/Game/"):
+        return None
+
+    package_path = object_path.split(".", 1)[0]
+
+    object_name = value.get("ObjectName")
+
+    if isinstance(object_name, str):
+        match = re.search(
+            r"'([^']+)'",
+            object_name,
+        )
+
+        if match:
+            class_name = match.group(1).rsplit("/", 1)[-1]
+
+            if class_name:
+                return package_path, class_name
+
+    class_name = package_path.rsplit("/", 1)[-1]
+
+    if not class_name:
+        return None
+
+    return package_path, class_name
 
 
 def name_for(

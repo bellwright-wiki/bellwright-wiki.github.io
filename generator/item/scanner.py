@@ -47,6 +47,8 @@ def discover_items(
     assets: AssetCache,
     index: CategoryIndex,
 ) -> Iterator[Item]:
+    unresolved = 0
+
     for path in assets.item_paths():
         cdo = assets.cdo(path)
         props = cdo.get("Properties")
@@ -71,10 +73,7 @@ def discover_items(
                 current_cdo = assets.cdo(current)
                 current_props = current_cdo.get("Properties")
 
-                if not isinstance(
-                    current_props,
-                    dict,
-                ):
+                if not isinstance(current_props, dict):
                     break
 
                 node = index.resolve_ref(current_props.get("Category"))
@@ -87,7 +86,27 @@ def discover_items(
                 if current is None:
                     break
 
-        if node is None or node.is_group:
+        if node is None:
+            unresolved += 1
+
+            category = props.get("Category")
+
+            if category is None:
+                reason = "no category reference"
+            else:
+                reason = f"unresolved category {category!r}"
+
+            print(
+                f"\tWARNING: item has no resolvable category: {path} ({name}; {reason})"
+            )
+            continue
+
+        if node.is_group:
+            unresolved += 1
+            print(
+                f"\tWARNING: item category resolves to a group: "
+                f"{path} ({name}; category={node.title})"
+            )
             continue
 
         group = index.group_for(node)
@@ -101,6 +120,12 @@ def discover_items(
             category_group=(group.title if group else None),
             name=name,
             properties=props,
+        )
+
+    if unresolved:
+        print(
+            f"\tWARNING: {unresolved} item definitions were skipped "
+            f"due to invalid or unresolved categories"
         )
 
 
