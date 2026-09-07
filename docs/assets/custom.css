@@ -136,6 +136,41 @@
   top: 0;
   right: 1rem;
   z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.site-search-icon {
+  position: relative;
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+}
+
+.site-search-icon::before {
+  content: "";
+  position: absolute;
+  top: 0.05rem;
+  left: 0.05rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  border: 0.14rem solid currentColor;
+  border-radius: 50%;
+}
+
+.site-search-icon::after {
+  content: "";
+  position: absolute;
+  top: 0.67rem;
+  left: 0.67rem;
+  width: 0.45rem;
+  height: 0.14rem;
+  border-radius: 0.1rem;
+  background: currentColor;
+  transform: rotate(45deg);
+  transform-origin: left center;
 }
 
 .site-search #search-input {

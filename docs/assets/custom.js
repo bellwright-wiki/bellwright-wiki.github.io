@@ -61,11 +61,15 @@ const markdownBody = document.querySelector(".markdown-body");
 if (markdownBody) {
     const firstHeading = markdownBody.querySelector("h1");
     const siteSearch = document.createElement("div");
+    const searchIcon = document.createElement("span");
     const searchInput = document.createElement("input");
     const searchResults = document.createElement("div");
 
     siteSearch.className = "site-search";
     siteSearch.dataset.pagefindIgnore = "";
+
+    searchIcon.className = "site-search-icon";
+    searchIcon.setAttribute("aria-hidden", "true");
 
     searchInput.id = "search-input";
     searchInput.className = "form-control input-block";
@@ -78,7 +82,7 @@ if (markdownBody) {
     searchResults.setAttribute("aria-live", "polite");
     searchResults.dataset.pagefindIgnore = "";
 
-    siteSearch.append(searchInput);
+    siteSearch.append(searchIcon, searchInput);
     firstHeading.after(siteSearch, searchResults);
 
     const scriptUrl = document.currentScript.src;
