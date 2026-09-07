@@ -127,18 +127,27 @@
 
 /** search **/
 
+.markdown-body {
+  position: relative;
+}
+
 .site-search {
-  display: flex;
-  justify-content: flex-end;
-  margin: 0 0 1.5rem;
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
 }
 
 .site-search #search-input {
-  width: min(100%, 20rem);
+  width: min(20rem, 40vw);
 }
 
 #search-results {
   margin: 0 0 1.5rem;
+}
+
+#search-results:empty {
+  display: none;
 }
 
 .search-result {

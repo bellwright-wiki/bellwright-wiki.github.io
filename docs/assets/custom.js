@@ -57,9 +57,9 @@ document.querySelector(".logo")?.addEventListener("click", (event) => {
 // Pagefind search
 
 const markdownBody = document.querySelector(".markdown-body");
-const dataGroups = document.querySelector(".data-groups");
 
-if (markdownBody && dataGroups) {
+if (markdownBody) {
+    const dataGroups = markdownBody.querySelector(".data-groups");
     const siteSearch = document.createElement("div");
     const searchInput = document.createElement("input");
     const searchResults = document.createElement("div");
@@ -79,7 +79,12 @@ if (markdownBody && dataGroups) {
     searchResults.dataset.pagefindIgnore = "";
 
     siteSearch.append(searchInput);
-    dataGroups.before(siteSearch, searchResults);
+
+    if (dataGroups) {
+        dataGroups.before(siteSearch, searchResults);
+    } else {
+        markdownBody.prepend(siteSearch, searchResults);
+    }
 
     const scriptUrl = document.currentScript.src;
     let pagefind;
