@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from generator.icon import copy_icon
-
 
 def _render_group(group: dict) -> list[str]:
     """Render one generator group."""
@@ -59,11 +57,6 @@ def write_index_page(
     """Write the root documentation index."""
     output.parent.mkdir(parents=True, exist_ok=True)
 
-    copy_icon(
-        logo,
-        output.parent / "assets",
-    )
-
     version = (
         (output.parent.parent / "assets" / "version")
         .read_text(encoding="utf-8")
@@ -74,6 +67,11 @@ def write_index_page(
         "---",
         "layout: default",
         "title: Bellwright Wiki & Guide",
+        (
+            "description: Explore the world of Bellwright with a searchable wiki "
+            "and database covering quests, items, characters, crafting, resources, "
+            "locations, rewards, and helpful guides."
+        ),
         "---",
         '<div class="logo"></div>',
         "",
@@ -85,7 +83,6 @@ def write_index_page(
         "",
         f"![Game Version](https://img.shields.io/badge/Game%20Version-{version}-black?logo=unrealengine)",
         "[![GitHub](https://img.shields.io/badge/Source%20Code-GitHub-black?logo=github)](https://github.com/r0ute/bw-wiki)",
-        "![Beta](https://img.shields.io/badge/Status-Beta-orange)",
         *_render_data(page_groups),
     ]
 

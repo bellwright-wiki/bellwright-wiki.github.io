@@ -1,6 +1,6 @@
 from pathlib import Path
 
-ICON_EXTENSIONS = {".webp"}
+ICON_EXTENSIONS = {".webp", ".ico"}
 ICON_PATH_KEYS = ("ObjectPath", "AssetPathName", "ObjectName")
 
 
@@ -79,3 +79,17 @@ def copy_icon(icon: Path, output_dir: Path) -> Path:
         destination.write_bytes(icon.read_bytes())
 
     return destination
+
+
+def copy_site_assets(
+    assets_root: Path,
+    docs_root: Path,
+) -> None:
+    copy_icon(
+        assets_root / "favicon.ico",
+        docs_root / "assets" / "icons",
+    )
+    copy_icon(
+        assets_root / "T_Logo.webp",
+        docs_root / "assets",
+    )

@@ -60,6 +60,20 @@ def _format_rewards(
     return guaranteed, random
 
 
+def _quest_description(quest: Quest) -> str:
+    description = f"{quest.title} Quest"
+    summary = quest.summary.strip()
+
+    if summary:
+        description += f" — {summary}"
+
+    return description
+
+
+def _category_description(title: str) -> str:
+    return f"Quests - {title} Category"
+
+
 def _write_quest_info(
     lines: list[str],
     quest: Quest,
@@ -165,6 +179,7 @@ def _write_steps(
 def _write_front_matter(
     lines: list[str],
     title: str,
+    description: str | None = None,
     parent: str | None = None,
     parent_url: str | None = None,
     grand_parent: str | None = None,
@@ -175,6 +190,14 @@ def _write_front_matter(
             "---",
             "layout: default",
             f"title: {json.dumps(title)}",
+        ]
+    )
+
+    if description:
+        lines.append(f"description: {json.dumps(description)}")
+
+    lines.extend(
+        [
             *navigation_metadata(
                 parent=parent,
                 parent_path=parent_url,
@@ -201,6 +224,7 @@ def _write_quest_page(
     _write_front_matter(
         lines,
         quest.title,
+        description=_quest_description(quest),
         parent=parent,
         parent_url=parent_url,
     )
@@ -229,6 +253,7 @@ def _write_page(
     lines: list[str],
     parent: str | None = None,
     parent_url: str | None = None,
+    description: str | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -237,6 +262,7 @@ def _write_page(
     _write_front_matter(
         content,
         title,
+        description=description,
         parent=parent,
         parent_url=parent_url,
     )
@@ -321,7 +347,7 @@ def write_category(
 ) -> None:
     """Write a quest category."""
     directory = docs / category_slug
-    category_url = f"/quest/{category_slug}"
+    category_url = f"/quests/{category_slug}"
 
     _write_directory(
         tree,
@@ -342,4 +368,5 @@ def write_category(
         docs / f"{category_slug}.md",
         tree.name,
         index_lines,
+        description=_category_description(tree.name),
     )

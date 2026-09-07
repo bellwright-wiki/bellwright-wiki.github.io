@@ -1,23 +1,24 @@
-from __future__ import annotations
-
 from .common import (
     FieldExtractor,
     asset_reference_name,
     context_field,
     field,
+    nested_field,
     tier,
 )
 
-EQUIPMENT_FIELDS: dict[str, FieldExtractor] = {
+FIELDS: dict[str, FieldExtractor] = {
     "Icon": context_field("icon"),
     "Name": field("Name"),
     "Tier": tier,
-    "Rarity": field(
-        "Rarity",
+    "Category": field(
+        "Category",
         transform=asset_reference_name,
     ),
     "Damage Type": field("DamageType", transform=asset_reference_name),
     "Damage": field("Damage"),
-    "Speed": field("WeaponSpeed"),
-    "Length": field("WeaponLength"),
+    "Projectile Damage": nested_field(
+        "ProjectileDamage",
+        "Damage",
+    ),
 }

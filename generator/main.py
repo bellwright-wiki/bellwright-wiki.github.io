@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from . import icon, renderer
-from .equipment import generator as equipment_generator
+from .item import generator as item_generator
 from .quest import generator as quest_generator
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -25,22 +25,19 @@ def clean_output() -> None:
 
 def main() -> None:
     clean_output()
-
     icon_index = icon.build_icon_index(ASSETS)
 
+    icon.copy_site_assets(
+        ASSETS,
+        DOCS,
+    )
     generators = (
-        equipment_generator.generate,
+        item_generator.generate,
         quest_generator.generate,
     )
 
     page_groups = [
-        generator(
-            ASSETS,
-            DOCS,
-            ICON_OUT,
-            icon_index,
-        )
-        for generator in generators
+        generator(ASSETS, DOCS, ICON_OUT, icon_index) for generator in generators
     ]
 
     renderer.write_index_page(
