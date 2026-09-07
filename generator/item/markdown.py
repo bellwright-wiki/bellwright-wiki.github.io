@@ -100,6 +100,7 @@ def render_page(
             grand_parent_path=grand_parent_path,
         ),
         f"# {title}",
+        '{: data-pagefind-meta="title"}',
         "",
     ]
 
@@ -165,6 +166,7 @@ def render_tree_page(
             parent=parent,
         ),
         f"# {title}",
+        '{: data-pagefind-meta="title"}',
         "",
         *tree,
         "",
@@ -180,10 +182,7 @@ def write_tree_page(
     *,
     parent: str | None = None,
 ):
-    output.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    output.parent.mkdir(parents=True, exist_ok=True)
 
     output.write_text(
         render_tree_page(

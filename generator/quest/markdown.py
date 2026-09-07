@@ -232,6 +232,7 @@ def _write_quest_page(
     lines.extend(
         [
             f"# {quest.title}",
+            '{: data-pagefind-meta="title"}',
             "",
         ]
     )
@@ -270,6 +271,7 @@ def _write_page(
     content.extend(
         [
             f"# {title}",
+            '{: data-pagefind-meta="title"}',
             "",
             *lines,
             "",
