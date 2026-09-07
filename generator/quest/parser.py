@@ -389,6 +389,7 @@ def _step_npc(step_object: dict) -> str:
 
 def _required_npcs(obj: dict) -> tuple[str, ...]:
     properties = obj.get("Properties")
+
     values = (
         properties.get("RequiredNpcsForQuestToBeVisible")
         if isinstance(properties, dict)
@@ -405,6 +406,29 @@ def _required_npcs(obj: dict) -> tuple[str, ...]:
 
         if npc and npc not in result:
             result.append(npc)
+
+    return tuple(result)
+
+
+def _required_quests(obj: dict) -> tuple[str, ...]:
+    properties = obj.get("Properties")
+
+    values = (
+        properties.get("RequiresCompletedQuestsToBeVisible")
+        if isinstance(properties, dict)
+        else None
+    )
+
+    if not isinstance(values, list):
+        return ()
+
+    result = []
+
+    for value in values:
+        quest = _class_name(value.get("QuestClass")) if isinstance(value, dict) else ""
+
+        if quest and quest not in result:
+            result.append(quest)
 
     return tuple(result)
 
@@ -456,29 +480,6 @@ def _resolve_steps(
     return tuple(steps)
 
 
-def _quest_npcs(
-    quest_object: dict,
-    steps: tuple[QuestStep, ...],
-    giver: str,
-) -> tuple[str, ...]:
-    result = []
-
-    for npc in _required_npcs(quest_object):
-        if npc and npc.casefold() != giver.casefold():
-            if npc not in result:
-                result.append(npc)
-
-    for step in steps:
-        if (
-            step.npc
-            and step.npc.casefold() != giver.casefold()
-            and step.npc not in result
-        ):
-            result.append(step.npc)
-
-    return tuple(result)
-
-
 def parse_quest(
     path: Path,
     relative_path: Path,
@@ -521,45 +522,11 @@ def parse_quest(
     village_trust_requirement = properties.get("RequiresVillageTrustLevel")
     if isinstance(village_trust_requirement, dict):
         village_trust_requirement = village_trust_requirement.get("TrustLevel")
-    else:
-        village_trust_requirement = ""
+    village_trust_requirement = _int(village_trust_requirement)
 
-    if isinstance(village_trust_requirement, str) and "::" in village_trust_requirement:
-        village_trust_requirement = village_trust_requirement.rsplit("::", 1)[1]
-    if not isinstance(village_trust_requirement, str):
-        village_trust_requirement = ""
-
-    village_liberation_requirement = properties.get(
-        "RequiresVillageLiberatedToBeVisible"
+    village_liberation_requirement = bool(
+        properties.get("RequiresVillageLiberatedToBeVisible")
     )
-
-    if isinstance(village_liberation_requirement, dict):
-        village_liberation_requirement = village_liberation_requirement.get(
-            "AssetPathName"
-        )
-    else:
-        village_liberation_requirement = ""
-
-    if isinstance(village_liberation_requirement, str):
-        village_liberation_requirement = village_liberation_requirement.rsplit(
-            "/",
-            1,
-        )[-1]
-        village_liberation_requirement = village_liberation_requirement.split(
-            ".",
-            1,
-        )[0]
-
-        if village_liberation_requirement.endswith("VillageProfile"):
-            village_liberation_requirement = village_liberation_requirement[
-                : -len("VillageProfile")
-            ]
-
-        village_liberation_requirement = " ".join(
-            _split_words(village_liberation_requirement)
-        ).strip()
-    else:
-        village_liberation_requirement = ""
 
     parts = relative_path.parts
     category_index = next(
@@ -578,12 +545,9 @@ def parse_quest(
         difficulty=difficulty,
         village_trust_requirement=village_trust_requirement,
         village_liberation_requirement=village_liberation_requirement,
+        required_npcs=_required_npcs(quest_object),
+        required_quests=_required_quests(quest_object),
         giver=giver,
-        npcs=_quest_npcs(
-            quest_object,
-            steps,
-            giver,
-        ),
         steps=steps,
         rewards=_rewards(quest_object),
         money_reward=_int(properties.get("MoneyReward")),

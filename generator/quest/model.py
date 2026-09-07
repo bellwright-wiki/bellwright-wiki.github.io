@@ -42,10 +42,11 @@ class Quest:
     title: str
     summary: str = ""
     difficulty: str = ""
-    village_trust_requirement: str = ""
-    village_liberation_requirement: str = ""
+    village_trust_requirement: int = 0
+    village_liberation_requirement: bool = False
+    required_npcs: tuple[str, ...] = field(default_factory=tuple)
+    required_quests: tuple[str, ...] = field(default_factory=tuple)
     giver: str = ""
-    npcs: tuple[str, ...] = field(default_factory=tuple)
     steps: tuple[QuestStep, ...] = field(default_factory=tuple)
     rewards: tuple[QuestReward, ...] = field(default_factory=tuple)
     money_reward: int = 0

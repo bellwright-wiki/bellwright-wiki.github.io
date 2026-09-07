@@ -60,6 +60,21 @@ def _format_rewards(
     return guaranteed, random
 
 
+def _format_requirements(quest: Quest) -> list[str]:
+    requirements = [
+        *(f"NPC: {npc}" for npc in quest.required_npcs),
+        *(f"Quest: {required_quest}" for required_quest in quest.required_quests),
+    ]
+
+    if quest.village_trust_requirement:
+        requirements.append(f"Village Trust: {quest.village_trust_requirement}")
+
+    if quest.village_liberation_requirement:
+        requirements.append("Village: Liberated")
+
+    return requirements
+
+
 def _quest_description(quest: Quest) -> str:
     description = f"{quest.title} Quest"
     summary = quest.summary.strip()
@@ -103,17 +118,10 @@ def _write_quest_info(
     reward_guaranteed, random = _format_rewards(quest.rewards)
     guaranteed.extend(reward_guaranteed)
 
-    requirements = []
-
-    if quest.village_trust_requirement:
-        requirements.append(f"Village Trust: {quest.village_trust_requirement}")
-
-    if quest.village_liberation_requirement:
-        requirements.append(f"{quest.village_liberation_requirement} liberated")
+    requirements = _format_requirements(quest)
 
     if (
         not quest.giver
-        and not quest.npcs
         and not quest.difficulty
         and not requirements
         and not guaranteed
@@ -123,12 +131,12 @@ def _write_quest_info(
 
     lines.extend(
         [
-            "| Difficulty | Requirements | Giver | NPCs | Rewards | Random Rewards |",
-            "|---|---|---|---|---|---|",
+            "| Difficulty | Requirements | Giver | Rewards | Random Rewards |",
+            "|---|---|---|---|---|",
             (
                 f"| {quest.difficulty} | {'<br>'.join(requirements)} | "
-                f"{quest.giver} | {'<br>'.join(quest.npcs)} | "
-                f"{'<br>'.join(guaranteed)} | {'<br>'.join(random)} |"
+                f"{quest.giver} | {'<br>'.join(guaranteed)} | "
+                f"{'<br>'.join(random)} |"
             ),
             "",
         ]
