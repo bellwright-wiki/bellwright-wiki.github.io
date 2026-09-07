@@ -59,7 +59,6 @@ document.querySelector(".logo")?.addEventListener("click", (event) => {
 const markdownBody = document.querySelector(".markdown-body");
 
 if (markdownBody) {
-    const dataGroups = markdownBody.querySelector(".data-groups");
     const firstHeading = markdownBody.querySelector("h1");
     const siteSearch = document.createElement("div");
     const searchInput = document.createElement("input");
@@ -71,21 +70,16 @@ if (markdownBody) {
     searchInput.id = "search-input";
     searchInput.className = "form-control input-block";
     searchInput.type = "search";
-    searchInput.placeholder = "Search the wiki...";
+    searchInput.placeholder = "Search";
     searchInput.autocomplete = "off";
-    searchInput.setAttribute("aria-label", "Search the wiki");
+    searchInput.setAttribute("aria-label", "Search");
 
     searchResults.id = "search-results";
     searchResults.setAttribute("aria-live", "polite");
     searchResults.dataset.pagefindIgnore = "";
 
     siteSearch.append(searchInput);
-
-    if (dataGroups) {
-        dataGroups.before(siteSearch, searchResults);
-    } else {
-        firstHeading.after(siteSearch, searchResults);
-    }
+    firstHeading.after(siteSearch, searchResults);
 
     const scriptUrl = document.currentScript.src;
     let pagefind;
