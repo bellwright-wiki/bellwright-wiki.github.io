@@ -7,20 +7,6 @@ from ..navigation import breadcrumb_include, navigation_metadata
 from .model import Quest, QuestItem, QuestNode, QuestReward, QuestStep
 
 
-def _format_items(items: tuple[QuestItem, ...]) -> str:
-    values = []
-
-    for item in items:
-        if item.min_amount == item.max_amount:
-            amount = str(item.min_amount)
-        else:
-            amount = f"{item.min_amount}-{item.max_amount}"
-
-        values.append(f"{item.name} x {amount}")
-
-    return "<br>".join(values)
-
-
 def _format_reward(reward: QuestReward) -> str:
     value = reward.name
 
@@ -117,7 +103,7 @@ def _write_quest_overview(
             "",
             "| Difficulty | Giver | Requirements |",
             "|---|---|---|",
-            (f"| {quest.difficulty} | {quest.giver} | {'<br>'.join(requirements)} |"),
+            f"| {quest.difficulty} | {quest.giver} | {'<br>'.join(requirements)} |",
             "",
         ]
     )
@@ -152,60 +138,11 @@ def _write_rewards(
     lines.append("")
 
 
-def _write_step(
-    lines: list[str],
-    number: str,
-    step: QuestStep,
-) -> None:
-    name = step.name
-
-    if step.optional:
-        name = f"{name} (Optional)"
-
-    lines.extend(
-        [
-            f"### {number}. {name}",
-            "",
-        ]
-    )
-
-    if step.npc:
-        lines.extend(
-            [
-                f"**NPC:** {step.npc}",
-                "",
-            ]
-        )
-
-    if step.summary:
-        lines.extend(
-            [
-                step.summary,
-                "",
-            ]
-        )
-
-    if step.items:
-        lines.extend(
-            [
-                "**Bring:**",
-                *(f"- {item}" for item in _format_item_list(step.items)),
-                "",
-            ]
-        )
-
-    if step.completion_text:
-        lines.extend(
-            [
-                "**Completion:**",
-                "",
-                step.completion_text,
-                "",
-            ]
-        )
+def _escape_table_cell(value: str) -> str:
+    return value.replace("|", "\\|").replace("\n", "<br>")
 
 
-def _format_item_list(items: tuple[QuestItem, ...]) -> list[str]:
+def _format_item_list(items: tuple[QuestItem, ...]) -> str:
     values = []
 
     for item in items:
@@ -216,7 +153,16 @@ def _format_item_list(items: tuple[QuestItem, ...]) -> list[str]:
 
         values.append(f"{item.name} x {amount}")
 
-    return values
+    return "<br>".join(values)
+
+
+def _format_step_name(step: QuestStep) -> str:
+    name = step.name
+
+    if step.optional:
+        name = f"{name} (Optional)"
+
+    return name
 
 
 def _write_steps(
@@ -227,6 +173,8 @@ def _write_steps(
         [
             "## Steps",
             "",
+            "| # | Step | Summary | NPC | Bring | Completion |",
+            "|---|---|---|---|---|---|",
         ]
     )
 
@@ -237,26 +185,38 @@ def _write_steps(
         step = steps[index]
 
         if not step.group_next:
-            _write_step(lines, str(number), step)
-            number += 1
-            index += 1
-            continue
+            group = [step]
+        else:
+            group = [step]
 
-        group = [step]
+            while index + 1 < len(steps) and steps[index].group_next:
+                index += 1
+                group.append(steps[index])
 
-        while index + 1 < len(steps) and steps[index].group_next:
-            index += 1
-            group.append(steps[index])
+        for offset, grouped_step in enumerate(group, start=1):
+            if len(group) == 1:
+                step_number = str(number)
+            else:
+                step_number = f"{number}.{offset}"
 
-        for offset, parallel_step in enumerate(group, start=1):
-            _write_step(
-                lines,
-                f"{number}.{offset}",
-                parallel_step,
+            summary = _escape_table_cell(grouped_step.summary)
+            npc = _escape_table_cell(grouped_step.npc)
+            items = _escape_table_cell(_format_item_list(grouped_step.items))
+            completion = _escape_table_cell(grouped_step.completion_text)
+
+            lines.append(
+                f"| {step_number} "
+                f"| {_escape_table_cell(_format_step_name(grouped_step))} "
+                f"| {summary} "
+                f"| {npc} "
+                f"| {items} "
+                f"| {completion} |"
             )
 
         number += 1
         index += 1
+
+    lines.append("")
 
 
 def _write_front_matter(
