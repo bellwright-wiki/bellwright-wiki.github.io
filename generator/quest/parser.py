@@ -446,6 +446,7 @@ def _resolve_steps(
                 summary=_description(step_object),
                 completion_text=_text(properties.get("CompletionText")),
                 type=quest_type,
+                optional="optional" in quest_type.casefold(),
                 group_next=group_next,
                 items=_items(step_object),
                 npc=_step_npc(step_object),
@@ -536,4 +537,5 @@ def parse_quest(
         money_reward=_int(properties.get("MoneyReward")),
         renown_reward=_int(properties.get("RenownReward")),
         village_trust_reward=_int(properties.get("VillageTrustReward")),
+        village_prosperity_reward=_int(properties.get("VillageProsperityReward")),
     )

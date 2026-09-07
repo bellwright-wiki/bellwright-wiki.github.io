@@ -91,6 +91,9 @@ def _write_quest_info(
     if quest.village_trust_reward > 0:
         guaranteed.append(f"Village Trust x {quest.village_trust_reward}")
 
+    if quest.village_prosperity_reward > 0:
+        guaranteed.append(f"Village Prosperity x {quest.village_prosperity_reward}")
+
     if quest.money_reward > 0:
         guaranteed.append(f"Money x {quest.money_reward}")
 
@@ -121,8 +124,13 @@ def _write_step_row(
     number: str,
     step: QuestStep,
 ) -> None:
+    name = step.name
+
+    if step.optional:
+        name = f"{name} (Optional)"
+
     lines.append(
-        f"| {number} | {step.name} | {step.summary or ''} | "
+        f"| {number} | {name} | {step.summary or ''} | "
         f"{step.npc or ''} | {_format_items(step.items)} | "
         f"{step.completion_text or ''} |"
     )
@@ -155,11 +163,7 @@ def _write_steps(
 
         group = [step]
 
-        while (
-            index + 1 < len(steps)
-            and steps[index].group_next
-            and steps[index + 1].type == step.type
-        ):
+        while index + 1 < len(steps) and steps[index].group_next:
             index += 1
             group.append(steps[index])
 

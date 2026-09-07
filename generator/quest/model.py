@@ -28,6 +28,7 @@ class QuestStep:
     completion_text: str = ""
     group_next: bool = False
     type: str = ""
+    optional: bool = False
     items: tuple[QuestItem, ...] = field(default_factory=tuple)
     npc: str = ""
 
@@ -47,6 +48,7 @@ class Quest:
     money_reward: int = 0
     renown_reward: int = 0
     village_trust_reward: int = 0
+    village_prosperity_reward: int = 0
 
 
 @dataclass
