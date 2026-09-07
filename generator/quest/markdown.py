@@ -118,25 +118,28 @@ def _write_quest_info(
     reward_guaranteed, random = _format_rewards(quest.rewards)
     guaranteed.extend(reward_guaranteed)
 
+    rewards = guaranteed
+
+    if random:
+        rewards.extend(
+            [
+                "Random:",
+                *(f"- {reward}" for reward in random),
+            ]
+        )
+
     requirements = _format_requirements(quest)
 
-    if (
-        not quest.giver
-        and not quest.difficulty
-        and not requirements
-        and not guaranteed
-        and not random
-    ):
+    if not quest.giver and not quest.difficulty and not requirements and not rewards:
         return
 
     lines.extend(
         [
-            "| Difficulty | Requirements | Giver | Rewards | Random Rewards |",
-            "|---|---|---|---|---|",
+            "| Difficulty | Requirements | Giver | Rewards |",
+            "|---|---|---|---|",
             (
                 f"| {quest.difficulty} | {'<br>'.join(requirements)} | "
-                f"{quest.giver} | {'<br>'.join(guaranteed)} | "
-                f"{'<br>'.join(random)} |"
+                f"{quest.giver} | {'<br>'.join(rewards)} |"
             ),
             "",
         ]
