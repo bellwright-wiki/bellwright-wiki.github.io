@@ -88,25 +88,10 @@ def discover_items(
 
         if node is None:
             unresolved += 1
-
-            category = props.get("Category")
-
-            if category is None:
-                reason = "no category reference"
-            else:
-                reason = f"unresolved category {category!r}"
-
-            print(
-                f"\tWARNING: item has no resolvable category: {path} ({name}; {reason})"
-            )
             continue
 
         if node.is_group:
             unresolved += 1
-            print(
-                f"\tWARNING: item category resolves to a group: "
-                f"{path} ({name}; category={node.title})"
-            )
             continue
 
         group = index.group_for(node)
@@ -124,8 +109,8 @@ def discover_items(
 
     if unresolved:
         print(
-            f"\tWARNING: {unresolved} item definitions were skipped "
-            f"due to invalid or unresolved categories"
+            f"Item definitions skipped due to invalid "
+            f"or unresolved categories: {unresolved} "
         )
 
 
