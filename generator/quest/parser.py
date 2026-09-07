@@ -95,7 +95,10 @@ def _asset_class_name(value) -> str:
     if not isinstance(asset_path, str):
         return ""
 
-    object_name = asset_path.rsplit("/", 1)[-1].split(".", 1)[0]
+    object_name = asset_path.rsplit("/", 1)[-1].strip("'\"")
+
+    if "." in object_name:
+        object_name = object_name.rsplit(".", 1)[1]
 
     return _usable_object_name(object_name)
 
