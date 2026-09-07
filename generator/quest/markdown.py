@@ -28,17 +28,9 @@ def _format_reward(reward: QuestReward) -> str:
         if reward.min_amount == reward.max_amount:
             amount = str(reward.min_amount)
         else:
-            amount = f"{reward.min_amount}-{reward.max_amount}"
+            amount = f"{reward.min_amount}–{reward.max_amount}"
 
         value = f"{value} x {amount}"
-
-    if reward.chance is not None:
-        chance = f"{reward.chance * 100:g}%"
-
-        if reward.per_roll:
-            chance += "/roll"
-
-        value = f"{value} ({chance})"
 
     return value
 

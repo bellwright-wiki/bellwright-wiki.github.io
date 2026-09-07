@@ -222,6 +222,10 @@ def _table_reward(table: dict) -> QuestReward | None:
         min_iterations,
     )
 
+    if min_amount is not None:
+        min_amount *= min_iterations
+        max_amount *= max_iterations
+
     per_roll = min_iterations != max_iterations
 
     return QuestReward(
