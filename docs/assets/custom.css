@@ -97,7 +97,7 @@
 /** homepage link **/
 
 .markdown-body > h1:has(> a) a {
-  display: inline-block;
+  display: block;
   width: 48px;
   aspect-ratio: 660 / 795;
   font-size: 0;
