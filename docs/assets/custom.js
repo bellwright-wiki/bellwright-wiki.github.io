@@ -70,9 +70,9 @@ if (markdownBody) {
     searchInput.id = "search-input";
     searchInput.className = "form-control input-block";
     searchInput.type = "search";
-    searchInput.placeholder = "Search";
+    searchInput.placeholder = "Search Wiki";
     searchInput.autocomplete = "off";
-    searchInput.setAttribute("aria-label", "Search");
+    searchInput.setAttribute("aria-label", "Search Wiki");
 
     searchResults.id = "search-results";
     searchResults.setAttribute("aria-live", "polite");
