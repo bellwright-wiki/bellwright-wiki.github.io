@@ -56,10 +56,31 @@ document.querySelector(".logo")?.addEventListener("click", (event) => {
 
 // Pagefind search
 
-const searchInput = document.querySelector("#search-input");
-const searchResults = document.querySelector("#search-results");
+const markdownBody = document.querySelector(".markdown-body");
+const dataGroups = document.querySelector(".data-groups");
 
-if (searchInput && searchResults) {
+if (markdownBody && dataGroups) {
+    const siteSearch = document.createElement("div");
+    const searchInput = document.createElement("input");
+    const searchResults = document.createElement("div");
+
+    siteSearch.className = "site-search";
+    siteSearch.dataset.pagefindIgnore = "";
+
+    searchInput.id = "search-input";
+    searchInput.className = "form-control input-block";
+    searchInput.type = "search";
+    searchInput.placeholder = "Search the wiki...";
+    searchInput.autocomplete = "off";
+    searchInput.setAttribute("aria-label", "Search the wiki");
+
+    searchResults.id = "search-results";
+    searchResults.setAttribute("aria-live", "polite");
+    searchResults.dataset.pagefindIgnore = "";
+
+    siteSearch.append(searchInput);
+    dataGroups.before(siteSearch, searchResults);
+
     const scriptUrl = document.currentScript.src;
     let pagefind;
     let searchRequest = 0;

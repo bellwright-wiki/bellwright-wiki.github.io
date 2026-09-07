@@ -128,11 +128,17 @@
 /** search **/
 
 .site-search {
-  margin: 1.5rem 0 2rem;
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 1.5rem;
+}
+
+.site-search #search-input {
+  width: min(100%, 20rem);
 }
 
 #search-results {
-  margin-top: 1rem;
+  margin: 0 0 1.5rem;
 }
 
 .search-result {
