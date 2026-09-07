@@ -64,6 +64,7 @@ class CategoryIndex:
                 str,
                 str,
                 str | None,
+                str | None,
                 bool,
                 str,
             ]
@@ -185,6 +186,8 @@ class CategoryIndex:
             class_name = str(class_obj.get("Name") or "").removesuffix("_C")
 
             parent_path = parent_for(cdo or {})
+            super_category_path = super_category_for(class_obj)
+
             base_class = category_base_class(
                 path,
                 str(class_obj.get("Name") or ""),
@@ -196,31 +199,49 @@ class CategoryIndex:
                     asset_path,
                     class_name,
                     parent_path,
+                    super_category_path,
                     base_class in CATEGORY_GROUP_CLASSES,
                     title,
                 )
             )
 
-        keys = {asset_path for _, asset_path, _, _, _, _ in pending}
+        keys = {
+            asset_path
+            for (
+                _,
+                asset_path,
+                _,
+                _,
+                _,
+                _,
+                _,
+            ) in pending
+        }
 
-        nodes = {
-            key: CategoryNode(
+        nodes: dict[str, CategoryNode] = {}
+
+        for (
+            path,
+            key,
+            class_name,
+            explicit_parent,
+            super_category_path,
+            is_group,
+            title,
+        ) in pending:
+            parent_key = explicit_parent if explicit_parent in keys else None
+
+            if parent_key is None and super_category_path in keys:
+                parent_key = super_category_path
+
+            nodes[key] = CategoryNode(
                 key=key,
                 class_name=class_name,
                 title=title,
                 path=path,
-                parent_key=(parent_path if parent_path in keys else None),
+                parent_key=parent_key,
                 is_group=is_group,
             )
-            for (
-                path,
-                key,
-                class_name,
-                parent_path,
-                is_group,
-                title,
-            ) in pending
-        }
 
         for node in nodes.values():
             if node.parent_key in nodes:
@@ -332,7 +353,7 @@ class CategoryIndex:
         )
 
         return [
-            child for child in children if (not categories_only or not child.is_group)
+            child for child in children if not categories_only or not child.is_group
         ]
 
     def roots(self) -> list[CategoryNode]:
@@ -421,6 +442,14 @@ def super_class(
         return None
 
     return package_path, class_name
+
+
+def super_category_for(
+    obj: dict[str, Any],
+) -> str | None:
+    parent = super_class(obj)
+
+    return parent[0] if parent else None
 
 
 def name_for(

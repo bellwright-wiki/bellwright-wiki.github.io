@@ -86,7 +86,14 @@ def _rows(
             }
         )
 
-    rows.sort(key=lambda row: str(row.get("Name", "")).lower())
+    rows.sort(
+        key=lambda row: str(
+            row.get(
+                "Name",
+                "",
+            )
+        ).lower()
+    )
 
     return headers, rows
 
@@ -269,26 +276,33 @@ def _group_tree(
     indent: int = 0,
 ) -> list[str]:
     lines: list[str] = []
-
-    children = sorted(
-        (
-            child
-            for child in index.children(
-                node,
-                categories_only=False,
-            )
-            if _has_items(
-                index,
-                child,
-                by_category,
-            )
-        ),
-        key=lambda child: child.title.casefold(),
-    )
-
     prefix = "  " * indent
 
-    for child in children:
+    for child in index.children(
+        node,
+        categories_only=False,
+    ):
+        if not _has_items(
+            index,
+            child,
+            by_category,
+        ):
+            # Empty category nodes are structural only. Their
+            # descendants remain part of the same visible tree.
+            if not child.is_group:
+                lines.extend(
+                    _group_tree(
+                        index,
+                        child,
+                        by_category,
+                        docs,
+                        source,
+                        indent,
+                    )
+                )
+
+            continue
+
         if child.is_group:
             categories = _categories_under(
                 index,
@@ -376,20 +390,36 @@ def _write_category_pages(
 
         parent = None
         parent_path = None
+        grand_parent = None
+        grand_parent_path = None
 
         if ancestors:
-            root_group = ancestors[0]
+            parent_node = ancestors[-1]
+            parent = parent_node.title
 
-            if root_group.key in root_groups and _group_page_needed(
+            if parent_node.key in root_groups and _group_page_needed(
                 index,
-                root_group,
+                parent_node,
                 by_category,
             ):
-                parent = root_group.title
                 parent_path = _group_path(
                     index,
-                    root_group,
+                    parent_node,
                 )
+
+            if len(ancestors) > 1:
+                grand_parent_node = ancestors[-2]
+                grand_parent = grand_parent_node.title
+
+                if grand_parent_node.key in root_groups and _group_page_needed(
+                    index,
+                    grand_parent_node,
+                    by_category,
+                ):
+                    grand_parent_path = _group_path(
+                        index,
+                        grand_parent_node,
+                    )
 
         relative_depth = len(output.relative_to(docs).parts) - 1
 
@@ -408,6 +438,8 @@ def _write_category_pages(
             headers=headers,
             parent=parent,
             parent_path=parent_path,
+            grand_parent=grand_parent,
+            grand_parent_path=grand_parent_path,
         )
 
         relative = output.relative_to(docs).as_posix()
@@ -416,7 +448,10 @@ def _write_category_pages(
             index,
             node,
             items[0].template,
-        ).__name__.rsplit(".", 1)[-1]
+        ).__name__.rsplit(
+            ".",
+            1,
+        )[-1]
 
         print(f"\tGENERATED {relative} ({len(items)} items) using schema {schema}")
 
