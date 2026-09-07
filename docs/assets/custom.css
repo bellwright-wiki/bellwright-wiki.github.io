@@ -140,24 +140,13 @@
 
 .site-search #search-input {
   width: min(20rem, 40vw);
+  padding: 0.5rem 1rem;
 }
 
 #search-results {
-  margin: 0 0 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 #search-results:empty {
   display: none;
-}
-
-.search-result {
-  margin-bottom: 1.5rem;
-}
-
-.search-result h2 {
-  margin-bottom: 0.35rem;
-}
-
-.search-result p {
-  margin-top: 0;
 }
