@@ -66,19 +66,19 @@ def write_index_page(
     lines = [
         "---",
         "layout: default",
-        "title: Bellwright Wiki & Guide",
+        "title: Bellwright Wiki",
         (
             "description: Explore the world of Bellwright with a searchable wiki "
             "and database covering quests, items, characters, crafting, resources, "
-            "locations, rewards, and helpful guides."
+            "locations, and rewards."
         ),
         "---",
         '<div class="logo"></div>',
         "",
-        "# Bellwright Wiki & Guide",
+        "# Bellwright Wiki",
         "",
         "A searchable **Bellwright wiki and database** with quests, items, "
-        "NPCs, rewards, recipes, resources, crafting, locations, guides, "
+        "NPCs, rewards, recipes, resources, crafting, locations, "
         "and other game data.",
         "",
         f"![Game Version](https://img.shields.io/badge/Game%20Version-{version}-black?logo=unrealengine)",

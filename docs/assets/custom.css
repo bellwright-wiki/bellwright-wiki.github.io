@@ -96,15 +96,15 @@
 
 /** homepage link **/
 
-.markdown-body > h1:first-child a {
-  display: inline-block;
+.markdown-body > h1:has(> a) a {
+  display: block;
   width: 48px;
   aspect-ratio: 660 / 795;
   font-size: 0;
   background: url("T_Logo.webp") center / contain no-repeat;
 }
 
-.markdown-body h1:first-child:has(> a) {
+.markdown-body > h1:has(> a) {
   border-bottom: none !important;
 }
 
@@ -112,7 +112,7 @@
 
 .data-groups {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 2rem;
   align-items: start;
 }
@@ -123,4 +123,57 @@
 
 .data-groups ul {
   margin-top: 0.5rem;
+}
+
+/** search **/
+
+.markdown-body {
+  position: relative;
+}
+
+.site-search {
+  position: absolute;
+  top: 0;
+  right: 1rem;
+  z-index: 10;
+}
+
+.site-search::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  width: 0.65rem;
+  height: 0.65rem;
+  border: 0.14rem solid currentColor;
+  border-radius: 50%;
+  transform: translateY(-60%);
+  pointer-events: none;
+}
+
+.site-search::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 1.38rem;
+  width: 0.4rem;
+  height: 0.14rem;
+  border-radius: 0.1rem;
+  background: currentColor;
+  transform: translateY(0.18rem) rotate(45deg);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+.site-search #search-input {
+  width: min(20rem, 40vw);
+  padding: 0.5rem 1rem 0.5rem 2.25rem;
+}
+
+#search-results {
+  margin-bottom: 1.5rem;
+}
+
+#search-results:empty {
+  display: none;
 }

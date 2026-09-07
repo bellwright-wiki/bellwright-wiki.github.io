@@ -53,3 +53,87 @@ document.querySelector(".logo")?.addEventListener("click", (event) => {
     void logo.offsetWidth;
     logo.classList.add("ringing");
 });
+
+// Pagefind search
+
+const markdownBody = document.querySelector(".markdown-body");
+
+if (markdownBody) {
+    const firstHeading = markdownBody.querySelector("h1");
+    const siteSearch = document.createElement("div");
+    const searchIcon = document.createElement("span");
+    const searchInput = document.createElement("input");
+    const searchResults = document.createElement("div");
+
+    siteSearch.className = "site-search";
+    siteSearch.dataset.pagefindIgnore = "";
+
+    searchIcon.className = "site-search-icon";
+    searchIcon.setAttribute("aria-hidden", "true");
+
+    searchInput.id = "search-input";
+    searchInput.className = "form-control input-block";
+    searchInput.type = "search";
+    searchInput.placeholder = "Search Wiki";
+    searchInput.autocomplete = "off";
+    searchInput.setAttribute("aria-label", "Search Wiki");
+
+    searchResults.id = "search-results";
+    searchResults.setAttribute("aria-live", "polite");
+    searchResults.dataset.pagefindIgnore = "";
+
+    siteSearch.append(searchIcon, searchInput);
+    firstHeading.after(siteSearch, searchResults);
+
+    const scriptUrl = document.currentScript.src;
+    let pagefind;
+    let searchRequest = 0;
+
+    searchInput.addEventListener("input", async () => {
+        const query = searchInput.value.trim();
+        const request = ++searchRequest;
+
+        if (!query) {
+            searchResults.replaceChildren();
+            return;
+        }
+
+        pagefind ??= await import(
+            new URL("../pagefind/pagefind.js", scriptUrl)
+        ).then(async (module) => {
+            const siteRoot = new URL("../", scriptUrl);
+            await module.options({ baseUrl: siteRoot.pathname });
+            return module;
+        });
+
+        const search = await pagefind.debouncedSearch(query);
+
+        if (request !== searchRequest || search === null) return;
+
+        const results = await Promise.all(
+            search.results.slice(0, 20).map((result) => result.data())
+        );
+
+        searchResults.replaceChildren();
+
+        if (!results.length) {
+            searchResults.textContent = "No results found.";
+            return;
+        }
+
+        results.forEach((result) => {
+            const article = document.createElement("article");
+            const heading = document.createElement("h2");
+            const link = document.createElement("a");
+            const excerpt = document.createElement("p");
+
+            article.className = "search-result";
+            link.href = result.url;
+            link.textContent = result.meta.title;
+            excerpt.innerHTML = result.excerpt;
+            heading.append(link);
+            article.append(heading, excerpt);
+            searchResults.append(article);
+        });
+    });
+}
