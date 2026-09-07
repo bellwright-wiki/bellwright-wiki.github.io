@@ -103,15 +103,31 @@ def _write_quest_info(
     reward_guaranteed, random = _format_rewards(quest.rewards)
     guaranteed.extend(reward_guaranteed)
 
-    if not quest.giver and not quest.npcs and not guaranteed and not random:
+    requirements = []
+
+    if quest.village_trust_requirement:
+        requirements.append(f"Village Trust: {quest.village_trust_requirement}")
+
+    if quest.village_liberation_requirement:
+        requirements.append(f"{quest.village_liberation_requirement} liberated")
+
+    if (
+        not quest.giver
+        and not quest.npcs
+        and not quest.difficulty
+        and not requirements
+        and not guaranteed
+        and not random
+    ):
         return
 
     lines.extend(
         [
-            "| Giver | NPCs | Rewards | Random Rewards |",
-            "|---|---|---|---|",
+            "| Difficulty | Requirements | Giver | NPCs | Rewards | Random Rewards |",
+            "|---|---|---|---|---|---|",
             (
-                f"| {quest.giver} | {'<br>'.join(quest.npcs)} | "
+                f"| {quest.difficulty} | {'<br>'.join(requirements)} | "
+                f"{quest.giver} | {'<br>'.join(quest.npcs)} | "
                 f"{'<br>'.join(guaranteed)} | {'<br>'.join(random)} |"
             ),
             "",

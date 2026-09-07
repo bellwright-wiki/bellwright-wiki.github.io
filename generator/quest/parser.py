@@ -512,6 +512,55 @@ def parse_quest(
 
     giver = _npc_name(properties.get("DefaultQuestGiverRef"))
 
+    difficulty = properties.get("Difficulty")
+    if isinstance(difficulty, str) and "::" in difficulty:
+        difficulty = difficulty.rsplit("::", 1)[1]
+    if not isinstance(difficulty, str):
+        difficulty = ""
+
+    village_trust_requirement = properties.get("RequiresVillageTrustLevel")
+    if isinstance(village_trust_requirement, dict):
+        village_trust_requirement = village_trust_requirement.get("TrustLevel")
+    else:
+        village_trust_requirement = ""
+
+    if isinstance(village_trust_requirement, str) and "::" in village_trust_requirement:
+        village_trust_requirement = village_trust_requirement.rsplit("::", 1)[1]
+    if not isinstance(village_trust_requirement, str):
+        village_trust_requirement = ""
+
+    village_liberation_requirement = properties.get(
+        "RequiresVillageLiberatedToBeVisible"
+    )
+
+    if isinstance(village_liberation_requirement, dict):
+        village_liberation_requirement = village_liberation_requirement.get(
+            "AssetPathName"
+        )
+    else:
+        village_liberation_requirement = ""
+
+    if isinstance(village_liberation_requirement, str):
+        village_liberation_requirement = village_liberation_requirement.rsplit(
+            "/",
+            1,
+        )[-1]
+        village_liberation_requirement = village_liberation_requirement.split(
+            ".",
+            1,
+        )[0]
+
+        if village_liberation_requirement.endswith("VillageProfile"):
+            village_liberation_requirement = village_liberation_requirement[
+                : -len("VillageProfile")
+            ]
+
+        village_liberation_requirement = " ".join(
+            _split_words(village_liberation_requirement)
+        ).strip()
+    else:
+        village_liberation_requirement = ""
+
     parts = relative_path.parts
     category_index = next(
         index
@@ -526,6 +575,9 @@ def parse_quest(
         relative_path=tuple(parts[category_index + 1 : -1]),
         title=title,
         summary=_text(properties.get("Summary")),
+        difficulty=difficulty,
+        village_trust_requirement=village_trust_requirement,
+        village_liberation_requirement=village_liberation_requirement,
         giver=giver,
         npcs=_quest_npcs(
             quest_object,

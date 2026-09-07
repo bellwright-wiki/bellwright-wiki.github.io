@@ -41,6 +41,9 @@ class Quest:
     relative_path: tuple[str, ...]
     title: str
     summary: str = ""
+    difficulty: str = ""
+    village_trust_requirement: str = ""
+    village_liberation_requirement: str = ""
     giver: str = ""
     npcs: tuple[str, ...] = field(default_factory=tuple)
     steps: tuple[QuestStep, ...] = field(default_factory=tuple)
