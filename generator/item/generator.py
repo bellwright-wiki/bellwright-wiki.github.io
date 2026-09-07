@@ -7,29 +7,15 @@ from pathlib import Path
 from .. import icon
 from . import category, markdown, scanner
 from .cache import AssetCache
-from .model import Item
 from .schema.common import FieldExtractor
 from .schema.mapping import schema_module
 
 TITLE = "Items"
 
 
-def _fields_for(
-    item: Item,
-    index: category.CategoryIndex,
-) -> dict[str, FieldExtractor]:
-    module = schema_module(
-        index,
-        index.nodes[item.category_key],
-        item.template,
-    )
-
-    return dict(getattr(module, "FIELDS", {}))
-
-
 def _rows(
     items,
-    index,
+    fields: dict[str, FieldExtractor],
     icon_index,
     icon_out,
     icon_prefix,
@@ -37,18 +23,10 @@ def _rows(
     if not items:
         return [], []
 
-    field_sets = [_fields_for(item, index) for item in items]
-
-    headers: list[str] = []
-
-    for fields in field_sets:
-        for name in fields:
-            if name not in headers:
-                headers.append(name)
-
+    headers = list(fields)
     rows = []
 
-    for item, fields in zip(items, field_sets):
+    for item in items:
         context = {
             "path": item.path,
             "template": item.template,
@@ -423,9 +401,15 @@ def _write_category_pages(
 
         relative_depth = len(output.relative_to(docs).parts) - 1
 
+        module = schema_module(
+            index,
+            node,
+            items[0].template,
+        )
+
         headers, rows = _rows(
             items,
-            index,
+            dict(getattr(module, "FIELDS", {})),
             icon_index,
             icon_out,
             "../" * relative_depth,
@@ -444,11 +428,7 @@ def _write_category_pages(
 
         relative = output.relative_to(docs).as_posix()
 
-        schema = schema_module(
-            index,
-            node,
-            items[0].template,
-        ).__name__.rsplit(
+        schema = module.__name__.rsplit(
             ".",
             1,
         )[-1]
@@ -516,10 +496,13 @@ def _write_group_pages(
 
         relative = output.relative_to(docs).as_posix()
 
-        print(
-            f"\tGENERATED {relative} "
-            f"({len(_categories_under(index, node, by_category))} categories)"
+        categories = _categories_under(
+            index,
+            node,
+            by_category,
         )
+
+        print(f"\tGENERATED {relative} ({len(categories)} categories)")
 
         pages.append(
             {

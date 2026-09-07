@@ -49,10 +49,10 @@ def _schema_names() -> tuple[str, ...]:
 
 
 _SCHEMA_NAMES = _schema_names()
+_SCHEMA_MATCHES = tuple((name, _normalize(name)) for name in _SCHEMA_NAMES)
 
 
 def _category_names(
-    index: Any,
     category_node: Any,
 ) -> tuple[str, ...]:
     names = [
@@ -99,9 +99,7 @@ def _group_names(
 def _find_schema(
     names: tuple[str, ...],
 ) -> str | None:
-    for schema_name in _SCHEMA_NAMES:
-        normalized_schema = _normalize(schema_name)
-
+    for schema_name, normalized_schema in _SCHEMA_MATCHES:
         if any(normalized_schema in name for name in names):
             return schema_name
 
@@ -112,12 +110,7 @@ def _autodiscovered_schema(
     index: Any,
     category_node: Any,
 ) -> str | None:
-    schema = _find_schema(
-        _category_names(
-            index,
-            category_node,
-        )
-    )
+    schema = _find_schema(_category_names(category_node))
 
     if schema is not None:
         return schema
@@ -132,10 +125,6 @@ def _autodiscovered_schema(
             return schema
 
     return None
-
-
-def _schema_exists(module_name: str) -> bool:
-    return find_spec(module_name) is not None
 
 
 def _warn_default(category_node: Any) -> None:
@@ -176,7 +165,7 @@ def schema_module(
     if module_name:
         module_path = f"{_SCHEMA_PACKAGE}.{module_name}"
 
-        if _schema_exists(module_path):
+        if find_spec(module_path) is not None:
             return import_module(module_path)
 
     _warn_default(category_node)
