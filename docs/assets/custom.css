@@ -124,3 +124,38 @@
 .data-groups ul {
   margin-top: 0.5rem;
 }
+
+/** search **/
+
+.site-search {
+  margin: 2rem 0;
+}
+
+.site-search label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+#search-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+}
+
+#search-results {
+  margin-top: 1rem;
+}
+
+.search-result {
+  margin-bottom: 1.5rem;
+}
+
+.search-result h2 {
+  margin-bottom: 0.35rem;
+}
+
+.search-result p {
+  margin-top: 0;
+}

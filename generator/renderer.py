@@ -81,6 +81,13 @@ def write_index_page(
         "NPCs, rewards, recipes, resources, crafting, locations, guides, "
         "and other game data.",
         "",
+        '<div class="site-search" data-pagefind-ignore>',
+        '<label for="search-input">Search the wiki</label>',
+        '<input id="search-input" type="search" placeholder="Search the wiki..." ',
+        'autocomplete="off">',
+        '<div id="search-results" aria-live="polite"></div>',
+        "</div>",
+        "",
         f"![Game Version](https://img.shields.io/badge/Game%20Version-{version}-black?logo=unrealengine)",
         "[![GitHub](https://img.shields.io/badge/Source%20Code-GitHub-black?logo=github)](https://github.com/r0ute/bw-wiki)",
         *_render_data(page_groups),

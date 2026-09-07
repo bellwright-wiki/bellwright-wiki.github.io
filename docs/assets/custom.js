@@ -53,3 +53,62 @@ document.querySelector(".logo")?.addEventListener("click", (event) => {
     void logo.offsetWidth;
     logo.classList.add("ringing");
 });
+
+// Pagefind search
+
+const searchInput = document.querySelector("#search-input");
+const searchResults = document.querySelector("#search-results");
+
+if (searchInput && searchResults) {
+    const scriptUrl = document.currentScript.src;
+    let pagefind;
+    let searchRequest = 0;
+
+    searchInput.addEventListener("input", async () => {
+        const query = searchInput.value.trim();
+        const request = ++searchRequest;
+
+        if (!query) {
+            searchResults.replaceChildren();
+            return;
+        }
+
+        pagefind ??= await import(
+            new URL("../pagefind/pagefind.js", scriptUrl)
+        ).then(async (module) => {
+            const siteRoot = new URL("../", scriptUrl);
+            await module.options({ baseUrl: siteRoot.pathname });
+            return module;
+        });
+
+        const search = await pagefind.debouncedSearch(query);
+
+        if (request !== searchRequest || search === null) return;
+
+        const results = await Promise.all(
+            search.results.slice(0, 20).map((result) => result.data())
+        );
+
+        searchResults.replaceChildren();
+
+        if (!results.length) {
+            searchResults.textContent = "No results found.";
+            return;
+        }
+
+        results.forEach((result) => {
+            const article = document.createElement("article");
+            const heading = document.createElement("h2");
+            const link = document.createElement("a");
+            const excerpt = document.createElement("p");
+
+            article.className = "search-result";
+            link.href = result.url;
+            link.textContent = result.meta.title;
+            excerpt.innerHTML = result.excerpt;
+            heading.append(link);
+            article.append(heading, excerpt);
+            searchResults.append(article);
+        });
+    });
+}
