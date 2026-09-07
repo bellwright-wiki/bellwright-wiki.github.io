@@ -50,6 +50,9 @@ jobs:
           source: ./docs
           destination: ./_site
 
+      - name: Fix site ownership
+        run: sudo chown -R "$(id -u):$(id -g)" ./_site
+
       - name: Index site with Pagefind
         run: npx -y pagefind@1.5.2 --site ./_site
 
