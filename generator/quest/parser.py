@@ -86,6 +86,20 @@ def _class_name(value) -> str:
     return _usable_object_name(object_name[start + 1 : end])
 
 
+def _asset_class_name(value) -> str:
+    if not isinstance(value, dict):
+        return ""
+
+    asset_path = value.get("AssetPathName")
+
+    if not isinstance(asset_path, str):
+        return ""
+
+    object_name = asset_path.rsplit("/", 1)[-1].split(".", 1)[0]
+
+    return _usable_object_name(object_name)
+
+
 def _npc_name(value) -> str:
     if isinstance(value, dict) and "TalkClass" in value:
         value = value.get("TalkClass")
@@ -429,7 +443,7 @@ def _required_quests(obj: dict) -> tuple[str, ...]:
     result = []
 
     for value in values:
-        quest = _class_name(value.get("QuestClass")) if isinstance(value, dict) else ""
+        quest = _asset_class_name(value)
 
         if quest and quest not in result:
             result.append(quest)
