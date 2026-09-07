@@ -81,18 +81,7 @@ def _category_description(title: str) -> str:
     return f"Quests - {title} Category"
 
 
-def _write_quest_info(
-    lines: list[str],
-    quest: Quest,
-) -> None:
-    if quest.summary:
-        lines.extend(
-            [
-                quest.summary,
-                "",
-            ]
-        )
-
+def _quest_rewards(quest: Quest) -> tuple[list[str], list[str]]:
     guaranteed = []
 
     if quest.village_trust_reward > 0:
@@ -110,35 +99,60 @@ def _write_quest_info(
     reward_guaranteed, random = _format_rewards(quest.rewards)
     guaranteed.extend(reward_guaranteed)
 
-    rewards = guaranteed
+    return guaranteed, random
 
-    if random:
-        rewards.extend(
-            [
-                "Random:",
-                *(f"- {reward}" for reward in random),
-            ]
-        )
 
+def _write_quest_overview(
+    lines: list[str],
+    quest: Quest,
+) -> None:
     requirements = _format_requirements(quest)
 
-    if not quest.giver and not quest.difficulty and not requirements and not rewards:
+    if not quest.giver and not quest.difficulty and not requirements:
         return
 
     lines.extend(
         [
-            "| Difficulty | Requirements | Giver | Rewards |",
-            "|---|---|---|---|",
-            (
-                f"| {quest.difficulty} | {'<br>'.join(requirements)} | "
-                f"{quest.giver} | {'<br>'.join(rewards)} |"
-            ),
+            "## Quest Overview",
+            "",
+            "| Difficulty | Giver | Requirements |",
+            "|---|---|---|",
+            (f"| {quest.difficulty} | {quest.giver} | {'<br>'.join(requirements)} |"),
             "",
         ]
     )
 
 
-def _write_step_row(
+def _write_rewards(
+    lines: list[str],
+    quest: Quest,
+) -> None:
+    guaranteed, random = _quest_rewards(quest)
+
+    if not guaranteed and not random:
+        return
+
+    lines.extend(
+        [
+            "### Rewards",
+            "",
+        ]
+    )
+
+    lines.extend(f"- {reward}" for reward in guaranteed)
+
+    if random:
+        if guaranteed:
+            lines.append("- **Random:**")
+        else:
+            lines.append("**Random:**")
+
+        lines.extend(f"  - {reward}" for reward in random)
+
+    lines.append("")
+
+
+def _write_step(
     lines: list[str],
     number: str,
     step: QuestStep,
@@ -148,11 +162,61 @@ def _write_step_row(
     if step.optional:
         name = f"{name} (Optional)"
 
-    lines.append(
-        f"| {number} | {name} | {step.summary or ''} | "
-        f"{step.npc or ''} | {_format_items(step.items)} | "
-        f"{step.completion_text or ''} |"
+    lines.extend(
+        [
+            f"### {number}. {name}",
+            "",
+        ]
     )
+
+    if step.npc:
+        lines.extend(
+            [
+                f"**NPC:** {step.npc}",
+                "",
+            ]
+        )
+
+    if step.summary:
+        lines.extend(
+            [
+                step.summary,
+                "",
+            ]
+        )
+
+    if step.items:
+        lines.extend(
+            [
+                "**Bring:**",
+                *(f"- {item}" for item in _format_item_list(step.items)),
+                "",
+            ]
+        )
+
+    if step.completion_text:
+        lines.extend(
+            [
+                "**Completion:**",
+                "",
+                step.completion_text,
+                "",
+            ]
+        )
+
+
+def _format_item_list(items: tuple[QuestItem, ...]) -> list[str]:
+    values = []
+
+    for item in items:
+        if item.min_amount == item.max_amount:
+            amount = str(item.min_amount)
+        else:
+            amount = f"{item.min_amount}-{item.max_amount}"
+
+        values.append(f"{item.name} x {amount}")
+
+    return values
 
 
 def _write_steps(
@@ -163,8 +227,6 @@ def _write_steps(
         [
             "## Steps",
             "",
-            "| # | Step | Summary | NPC | Items to bring | Completion |",
-            "|---|---|---|---|---|---|",
         ]
     )
 
@@ -175,7 +237,7 @@ def _write_steps(
         step = steps[index]
 
         if not step.group_next:
-            _write_step_row(lines, str(number), step)
+            _write_step(lines, str(number), step)
             number += 1
             index += 1
             continue
@@ -187,7 +249,7 @@ def _write_steps(
             group.append(steps[index])
 
         for offset, parallel_step in enumerate(group, start=1):
-            _write_step_row(
+            _write_step(
                 lines,
                 f"{number}.{offset}",
                 parallel_step,
@@ -195,8 +257,6 @@ def _write_steps(
 
         number += 1
         index += 1
-
-    lines.append("")
 
 
 def _write_front_matter(
@@ -264,7 +324,16 @@ def _write_quest_page(
         ]
     )
 
-    _write_quest_info(lines, quest)
+    if quest.summary:
+        lines.extend(
+            [
+                quest.summary,
+                "",
+            ]
+        )
+
+    _write_quest_overview(lines, quest)
+    _write_rewards(lines, quest)
 
     if quest.steps:
         _write_steps(lines, quest.steps)
