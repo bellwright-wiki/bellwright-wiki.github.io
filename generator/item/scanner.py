@@ -47,7 +47,7 @@ def discover_items(
     assets: AssetCache,
     index: CategoryIndex,
 ) -> Iterator[Item]:
-    unresolved = 0
+    unresolved: list[str] = []
 
     for path in assets.item_paths():
         cdo = assets.cdo(path)
@@ -87,11 +87,11 @@ def discover_items(
                     break
 
         if node is None:
-            unresolved += 1
+            unresolved.append(path.relative_to(assets.assets_root).as_posix())
             continue
 
         if node.is_group:
-            unresolved += 1
+            unresolved.append(path.relative_to(assets.assets_root).as_posix())
             continue
 
         group = index.group_for(node)
@@ -109,9 +109,12 @@ def discover_items(
 
     if unresolved:
         print(
-            f"Item definitions skipped due to invalid "
-            f"or unresolved categories: {unresolved} "
+            "Item definitions skipped due to invalid "
+            f"or unresolved categories: {len(unresolved)}"
         )
+
+        for path in unresolved:
+            print(f"\t{path}")
 
 
 def load_broken_relationships(
