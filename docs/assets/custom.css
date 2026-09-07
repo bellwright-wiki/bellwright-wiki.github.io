@@ -128,20 +128,7 @@
 /** search **/
 
 .site-search {
-  margin: 2rem 0;
-}
-
-.site-search label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-#search-input {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 0.65rem 0.75rem;
-  font: inherit;
+  margin: 1.5rem 0 2rem;
 }
 
 #search-results {
