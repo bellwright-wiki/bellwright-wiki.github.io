@@ -96,7 +96,7 @@
 
 /** homepage link **/
 
-.markdown-body > h1:first-child a {
+.markdown-body > h1:has(> a) a {
   display: inline-block;
   width: 48px;
   aspect-ratio: 660 / 795;
@@ -104,7 +104,7 @@
   background: url("T_Logo.webp") center / contain no-repeat;
 }
 
-.markdown-body h1:first-child:has(> a) {
+.markdown-body > h1:has(> a) {
   border-bottom: none !important;
 }
 
