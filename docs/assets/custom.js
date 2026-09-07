@@ -60,6 +60,7 @@ const markdownBody = document.querySelector(".markdown-body");
 
 if (markdownBody) {
     const dataGroups = markdownBody.querySelector(".data-groups");
+    const firstHeading = markdownBody.querySelector("h1");
     const siteSearch = document.createElement("div");
     const searchInput = document.createElement("input");
     const searchResults = document.createElement("div");
@@ -83,7 +84,7 @@ if (markdownBody) {
     if (dataGroups) {
         dataGroups.before(siteSearch, searchResults);
     } else {
-        markdownBody.prepend(siteSearch, searchResults);
+        firstHeading.after(siteSearch, searchResults);
     }
 
     const scriptUrl = document.currentScript.src;
