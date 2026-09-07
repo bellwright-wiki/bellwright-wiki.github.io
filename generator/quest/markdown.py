@@ -297,6 +297,7 @@ def _write_directory(
     directory: Path,
     category: str,
     category_url: str,
+    directory_url: str,
     parent: str | None = None,
     parent_url: str | None = None,
     grand_parent: str | None = None,
@@ -308,7 +309,7 @@ def _write_directory(
             directory.with_suffix(".md"),
             node.quest,
             parent=parent or category,
-            parent_url=parent_url or category_url,
+            parent_url=parent_url,
             grand_parent=grand_parent,
             grand_parent_url=grand_parent_url,
         )
@@ -322,22 +323,27 @@ def _write_directory(
         node.children.items(),
         key=lambda item: item[1].name.casefold(),
     ):
-        if node.quest is not None:
-            child_parent = node.name
-            child_parent_url = directory.with_suffix(".md").as_posix()
+        if parent is None:
+            child_parent = category
+            child_parent_url = category_url
+            child_grand_parent = None
+            child_grand_parent_url = None
         else:
-            child_parent = parent or category
-            child_parent_url = parent_url or category_url
+            child_parent = node.name
+            child_parent_url = directory_url if node.quest is not None else None
+            child_grand_parent = parent
+            child_grand_parent_url = parent_url
 
         _write_directory(
             child,
             directory / key,
             category,
             category_url,
+            f"{directory_url}/{key}",
             parent=child_parent,
             parent_url=child_parent_url,
-            grand_parent=parent,
-            grand_parent_url=parent_url,
+            grand_parent=child_grand_parent,
+            grand_parent_url=child_grand_parent_url,
         )
 
 
@@ -381,6 +387,7 @@ def write_category(
         directory,
         category=tree.name,
         category_url=category_url,
+        directory_url=category_url,
     )
 
     index_lines: list[str] = []
