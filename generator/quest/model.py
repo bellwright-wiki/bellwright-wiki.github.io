@@ -42,7 +42,7 @@ class Quest:
     title: str
     summary: str = ""
     difficulty: str = ""
-    village_trust_requirement: int = 0
+    village_trust_requirement: str = ""
     village_liberation_requirement: bool = False
     required_npcs: tuple[str, ...] = field(default_factory=tuple)
     required_quests: tuple[str, ...] = field(default_factory=tuple)

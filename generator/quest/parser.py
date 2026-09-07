@@ -147,6 +147,19 @@ def _float(value, default: float = 0.0) -> float:
     return default
 
 
+def _enum_name(value) -> str:
+    """Extract the displayable enum member from an Unreal enum value."""
+    if not isinstance(value, str):
+        return ""
+
+    value = value.strip()
+
+    if "::" in value:
+        value = value.rsplit("::", 1)[1]
+
+    return value.strip()
+
+
 def _items(obj: dict) -> tuple[QuestItem, ...]:
     properties = obj.get("Properties")
     values = properties.get("Items") if isinstance(properties, dict) else None
@@ -532,15 +545,14 @@ def parse_quest(
     giver = _npc_name(properties.get("DefaultQuestGiverRef"))
 
     difficulty = properties.get("Difficulty")
-    if isinstance(difficulty, str) and "::" in difficulty:
-        difficulty = difficulty.rsplit("::", 1)[1]
-    if not isinstance(difficulty, str):
-        difficulty = ""
+    difficulty = _enum_name(difficulty)
 
     village_trust_requirement = properties.get("RequiresVillageTrustLevel")
+
     if isinstance(village_trust_requirement, dict):
         village_trust_requirement = village_trust_requirement.get("TrustLevel")
-    village_trust_requirement = _int(village_trust_requirement)
+
+    village_trust_requirement = _enum_name(village_trust_requirement)
 
     village_liberation_requirement = bool(
         properties.get("RequiresVillageLiberatedToBeVisible")
