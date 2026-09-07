@@ -136,46 +136,38 @@
   top: 0;
   right: 1rem;
   z-index: 10;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
-.site-search-icon {
-  position: relative;
-  display: block;
-  width: 1rem;
-  height: 1rem;
-  flex: 0 0 1rem;
-}
-
-.site-search-icon::before {
+.site-search::before {
   content: "";
   position: absolute;
-  top: 0.05rem;
-  left: 0.05rem;
-  width: 0.6rem;
-  height: 0.6rem;
+  top: 50%;
+  left: 0.75rem;
+  width: 0.65rem;
+  height: 0.65rem;
   border: 0.14rem solid currentColor;
   border-radius: 50%;
+  transform: translateY(-60%);
+  pointer-events: none;
 }
 
-.site-search-icon::after {
+.site-search::after {
   content: "";
   position: absolute;
-  top: 0.67rem;
-  left: 0.67rem;
-  width: 0.45rem;
+  top: 50%;
+  left: 1.38rem;
+  width: 0.4rem;
   height: 0.14rem;
   border-radius: 0.1rem;
   background: currentColor;
-  transform: rotate(45deg);
+  transform: translateY(0.18rem) rotate(45deg);
   transform-origin: left center;
+  pointer-events: none;
 }
 
 .site-search #search-input {
   width: min(20rem, 40vw);
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1rem 0.5rem 2.25rem;
 }
 
 #search-results {
