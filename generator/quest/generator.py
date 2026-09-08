@@ -1,5 +1,6 @@
 """Quest documentation generator orchestration."""
 
+from dataclasses import replace
 from pathlib import Path
 
 from .markdown import write_category
@@ -7,6 +8,25 @@ from .scanner import discover_quests
 from .tree import build_tree
 
 TITLE = "Quests"
+
+
+def _resolve_required_quests(
+    quests_by_category: dict[str, list],
+) -> None:
+    titles = {
+        quest.name.casefold(): quest.title
+        for quests in quests_by_category.values()
+        for quest in quests
+    }
+
+    for quests in quests_by_category.values():
+        for index, quest in enumerate(quests):
+            quests[index] = replace(
+                quest,
+                required_quests=tuple(
+                    titles.get(name.casefold(), name) for name in quest.required_quests
+                ),
+            )
 
 
 def generate(
@@ -17,6 +37,7 @@ def generate(
 ) -> dict:
     """Generate all discovered quest categories."""
     quests_by_category = discover_quests(assets)
+    _resolve_required_quests(quests_by_category)
 
     print(
         f"Quests indexed: {sum(len(quests) for quests in quests_by_category.values())}"

@@ -7,20 +7,6 @@ from ..navigation import breadcrumb_include, navigation_metadata
 from .model import Quest, QuestItem, QuestNode, QuestReward, QuestStep
 
 
-def _format_items(items: tuple[QuestItem, ...]) -> str:
-    values = []
-
-    for item in items:
-        if item.min_amount == item.max_amount:
-            amount = str(item.min_amount)
-        else:
-            amount = f"{item.min_amount}-{item.max_amount}"
-
-        values.append(f"{item.name} x {amount}")
-
-    return "<br>".join(values)
-
-
 def _format_reward(reward: QuestReward) -> str:
     value = reward.name
 
@@ -28,17 +14,9 @@ def _format_reward(reward: QuestReward) -> str:
         if reward.min_amount == reward.max_amount:
             amount = str(reward.min_amount)
         else:
-            amount = f"{reward.min_amount}-{reward.max_amount}"
+            amount = f"{reward.min_amount}–{reward.max_amount}"
 
         value = f"{value} x {amount}"
-
-    if reward.chance is not None:
-        chance = f"{reward.chance * 100:g}%"
-
-        if reward.per_roll:
-            chance += "/roll"
-
-        value = f"{value} ({chance})"
 
     return value
 
@@ -60,6 +38,21 @@ def _format_rewards(
     return guaranteed, random
 
 
+def _format_requirements(quest: Quest) -> list[str]:
+    requirements = [
+        *(f"NPC: {npc}" for npc in quest.required_npcs),
+        *(f"Quest: {required_quest}" for required_quest in quest.required_quests),
+    ]
+
+    if quest.village_trust_requirement:
+        requirements.append(f"Village Trust: {quest.village_trust_requirement}")
+
+    if quest.village_liberation_requirement:
+        requirements.append("Village: Liberated")
+
+    return requirements
+
+
 def _quest_description(quest: Quest) -> str:
     description = f"{quest.title} Quest"
     summary = quest.summary.strip()
@@ -74,22 +67,14 @@ def _category_description(title: str) -> str:
     return f"Quests - {title} Category"
 
 
-def _write_quest_info(
-    lines: list[str],
-    quest: Quest,
-) -> None:
-    if quest.summary:
-        lines.extend(
-            [
-                quest.summary,
-                "",
-            ]
-        )
-
+def _quest_rewards(quest: Quest) -> tuple[list[str], list[str]]:
     guaranteed = []
 
     if quest.village_trust_reward > 0:
         guaranteed.append(f"Village Trust x {quest.village_trust_reward}")
+
+    if quest.village_prosperity_reward > 0:
+        guaranteed.append(f"Village Prosperity x {quest.village_prosperity_reward}")
 
     if quest.money_reward > 0:
         guaranteed.append(f"Money x {quest.money_reward}")
@@ -100,32 +85,88 @@ def _write_quest_info(
     reward_guaranteed, random = _format_rewards(quest.rewards)
     guaranteed.extend(reward_guaranteed)
 
-    if not quest.giver and not quest.npcs and not guaranteed and not random:
+    return guaranteed, random
+
+
+def _write_quest_overview(
+    lines: list[str],
+    quest: Quest,
+) -> None:
+    requirements = _format_requirements(quest)
+
+    if not quest.giver and not quest.difficulty and not requirements:
         return
+
+    difficulty = _escape_table_cell(quest.difficulty)
+    giver = _escape_table_cell(quest.giver)
+    requirements_text = _escape_table_cell("<br>".join(requirements))
 
     lines.extend(
         [
-            "| Giver | NPCs | Rewards | Random Rewards |",
-            "|---|---|---|---|",
-            (
-                f"| {quest.giver} | {'<br>'.join(quest.npcs)} | "
-                f"{'<br>'.join(guaranteed)} | {'<br>'.join(random)} |"
-            ),
+            "## Quest Overview",
+            "",
+            "| Difficulty | Giver | Requirements |",
+            "|---|---|---|",
+            f"| {difficulty} | {giver} | {requirements_text} |",
             "",
         ]
     )
 
 
-def _write_step_row(
+def _write_rewards(
     lines: list[str],
-    number: str,
-    step: QuestStep,
+    quest: Quest,
 ) -> None:
-    lines.append(
-        f"| {number} | {step.name} | {step.summary or ''} | "
-        f"{step.npc or ''} | {_format_items(step.items)} | "
-        f"{step.completion_text or ''} |"
+    guaranteed, random = _quest_rewards(quest)
+
+    if not guaranteed and not random:
+        return
+
+    lines.extend(
+        [
+            "### Rewards",
+            "",
+        ]
     )
+
+    lines.extend(f"- {reward}" for reward in guaranteed)
+
+    if random:
+        if guaranteed:
+            lines.append("- **Random:**")
+        else:
+            lines.append("**Random:**")
+
+        lines.extend(f"  - {reward}" for reward in random)
+
+    lines.append("")
+
+
+def _escape_table_cell(value: str) -> str:
+    return value.replace("|", "\\|").replace("\n", "<br>")
+
+
+def _format_item_list(items: tuple[QuestItem, ...]) -> str:
+    values = []
+
+    for item in items:
+        if item.min_amount == item.max_amount:
+            amount = str(item.min_amount)
+        else:
+            amount = f"{item.min_amount}-{item.max_amount}"
+
+        values.append(f"{item.name} x {amount}")
+
+    return "<br>".join(values)
+
+
+def _format_step_name(step: QuestStep) -> str:
+    name = step.name
+
+    if step.optional:
+        name = f"{name} (Optional)"
+
+    return name
 
 
 def _write_steps(
@@ -136,7 +177,7 @@ def _write_steps(
         [
             "## Steps",
             "",
-            "| # | Step | Summary | NPC | Items to bring | Completion |",
+            "| # | Step | Summary | NPC | Bring | Completion |",
             "|---|---|---|---|---|---|",
         ]
     )
@@ -148,26 +189,32 @@ def _write_steps(
         step = steps[index]
 
         if not step.group_next:
-            _write_step_row(lines, str(number), step)
-            number += 1
-            index += 1
-            continue
+            group = [step]
+        else:
+            group = [step]
 
-        group = [step]
+            while index + 1 < len(steps) and steps[index].group_next:
+                index += 1
+                group.append(steps[index])
 
-        while (
-            index + 1 < len(steps)
-            and steps[index].group_next
-            and steps[index + 1].type == step.type
-        ):
-            index += 1
-            group.append(steps[index])
+        for offset, grouped_step in enumerate(group, start=1):
+            if len(group) == 1:
+                step_number = str(number)
+            else:
+                step_number = f"{number}.{offset}"
 
-        for offset, parallel_step in enumerate(group, start=1):
-            _write_step_row(
-                lines,
-                f"{number}.{offset}",
-                parallel_step,
+            summary = _escape_table_cell(grouped_step.summary)
+            npc = _escape_table_cell(grouped_step.npc)
+            items = _escape_table_cell(_format_item_list(grouped_step.items))
+            completion = _escape_table_cell(grouped_step.completion_text)
+
+            lines.append(
+                f"| {step_number} "
+                f"| {_escape_table_cell(_format_step_name(grouped_step))} "
+                f"| {summary} "
+                f"| {npc} "
+                f"| {items} "
+                f"| {completion} |"
             )
 
         number += 1
@@ -215,7 +262,9 @@ def _write_quest_page(
     path: Path,
     quest: Quest,
     parent: str,
-    parent_url: str,
+    parent_url: str | None,
+    grand_parent: str | None,
+    grand_parent_url: str | None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -227,6 +276,8 @@ def _write_quest_page(
         description=_quest_description(quest),
         parent=parent,
         parent_url=parent_url,
+        grand_parent=grand_parent,
+        grand_parent_url=grand_parent_url,
     )
 
     lines.extend(
@@ -237,7 +288,16 @@ def _write_quest_page(
         ]
     )
 
-    _write_quest_info(lines, quest)
+    if quest.summary:
+        lines.extend(
+            [
+                quest.summary,
+                "",
+            ]
+        )
+
+    _write_quest_overview(lines, quest)
+    _write_rewards(lines, quest)
 
     if quest.steps:
         _write_steps(lines, quest.steps)
@@ -289,14 +349,21 @@ def _write_directory(
     directory: Path,
     category: str,
     category_url: str,
+    directory_url: str,
+    parent: str | None = None,
+    parent_url: str | None = None,
+    grand_parent: str | None = None,
+    grand_parent_url: str | None = None,
 ) -> None:
     """Write quest pages while using tree nodes as directories."""
     if node.quest is not None:
         _write_quest_page(
             directory.with_suffix(".md"),
             node.quest,
-            parent=category,
-            parent_url=category_url,
+            parent=parent or category,
+            parent_url=parent_url,
+            grand_parent=grand_parent,
+            grand_parent_url=grand_parent_url,
         )
 
     if not node.children:
@@ -308,11 +375,27 @@ def _write_directory(
         node.children.items(),
         key=lambda item: item[1].name.casefold(),
     ):
+        if parent is None:
+            child_parent = category
+            child_parent_url = category_url
+            child_grand_parent = None
+            child_grand_parent_url = None
+        else:
+            child_parent = node.name
+            child_parent_url = directory_url if node.quest is not None else None
+            child_grand_parent = parent
+            child_grand_parent_url = parent_url
+
         _write_directory(
             child,
             directory / key,
             category,
             category_url,
+            f"{directory_url}/{key}",
+            parent=child_parent,
+            parent_url=child_parent_url,
+            grand_parent=child_grand_parent,
+            grand_parent_url=child_grand_parent_url,
         )
 
 
@@ -356,6 +439,7 @@ def write_category(
         directory,
         category=tree.name,
         category_url=category_url,
+        directory_url=category_url,
     )
 
     index_lines: list[str] = []

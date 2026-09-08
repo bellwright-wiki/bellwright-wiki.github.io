@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from .parser import ObjectIndex
+from .parser import ObjectIndex, quest_name_and_title
 from .reader import read_objects
 
 QUEST_ROOT = Path("Bellwright/Content/Mist/Data/Quests")
@@ -17,6 +17,7 @@ class QuestCache:
         self._objects: dict[Path, list[dict]] = {}
         self._paths: tuple[Path, ...] | None = None
         self._directory_indexes: dict[Path, ObjectIndex] | None = None
+        self._quest_titles: dict[str, str] | None = None
 
     def paths(self) -> tuple[Path, ...]:
         """Return all quest JSON paths."""
@@ -46,9 +47,19 @@ class QuestCache:
             return self._directory_indexes
 
         indexes: dict[Path, ObjectIndex] = {}
+        quest_titles: dict[str, str] = {}
 
         for path in self.paths():
             objects = self.objects(path)
+
+            quest_identity = quest_name_and_title(
+                objects,
+                path.stem,
+            )
+
+            if quest_identity is not None:
+                name, title = quest_identity
+                quest_titles[name.casefold()] = title
 
             for obj in objects:
                 value = obj.get("Name")
@@ -76,5 +87,13 @@ class QuestCache:
                 break
 
         self._directory_indexes = indexes
+        self._quest_titles = quest_titles
 
         return indexes
+
+    def quest_titles(self) -> dict[str, str]:
+        """Return a case-insensitive root quest-name to title index."""
+        if self._quest_titles is None:
+            self.directory_indexes()
+
+        return self._quest_titles

@@ -29,6 +29,15 @@ def _quest_object(objects: list[dict]) -> dict | None:
         if isinstance(value, str) and "quest" in value.casefold():
             return obj
 
+    for obj in objects:
+        properties = obj.get("Properties")
+
+        if not isinstance(properties, dict):
+            continue
+
+        if isinstance(properties.get("Subquests"), list):
+            return obj
+
     return None
 
 
@@ -86,6 +95,23 @@ def _class_name(value) -> str:
     return _usable_object_name(object_name[start + 1 : end])
 
 
+def _asset_class_name(value) -> str:
+    if not isinstance(value, dict):
+        return ""
+
+    asset_path = value.get("AssetPathName")
+
+    if not isinstance(asset_path, str):
+        return ""
+
+    object_name = asset_path.rsplit("/", 1)[-1].strip("'\"")
+
+    if "." in object_name:
+        object_name = object_name.rsplit(".", 1)[1]
+
+    return _usable_object_name(object_name)
+
+
 def _npc_name(value) -> str:
     if isinstance(value, dict) and "TalkClass" in value:
         value = value.get("TalkClass")
@@ -96,6 +122,57 @@ def _npc_name(value) -> str:
         name = name[:-4]
 
     return " ".join(_split_words(name)).strip()
+
+
+def _npc_template_key(value) -> str:
+    if not isinstance(value, dict):
+        return ""
+
+    template = value.get("TemplateClass")
+
+    if not isinstance(template, dict):
+        return ""
+
+    object_path = template.get("ObjectPath")
+
+    if isinstance(object_path, str) and object_path:
+        return object_path
+
+    object_name = template.get("ObjectName")
+
+    if isinstance(object_name, str) and object_name:
+        return object_name
+
+    return ""
+
+
+def _npc_name_from_required_npcs(
+    value: dict,
+    required_npcs: list[dict],
+) -> str:
+    npc = _npc_name(value)
+
+    if npc:
+        return npc
+
+    template_key = _npc_template_key(value)
+
+    if not template_key:
+        return ""
+
+    for required_npc in required_npcs:
+        if not isinstance(required_npc, dict):
+            continue
+
+        if _npc_template_key(required_npc) != template_key:
+            continue
+
+        npc = _npc_name(required_npc)
+
+        if npc:
+            return npc
+
+    return ""
 
 
 def _int(value, default: int = 0) -> int:
@@ -131,6 +208,19 @@ def _float(value, default: float = 0.0) -> float:
             pass
 
     return default
+
+
+def _enum_name(value) -> str:
+    """Extract the displayable enum member from an Unreal enum value."""
+    if not isinstance(value, str):
+        return ""
+
+    value = value.strip()
+
+    if "::" in value:
+        value = value.rsplit("::", 1)[1]
+
+    return value.strip()
 
 
 def _items(obj: dict) -> tuple[QuestItem, ...]:
@@ -221,6 +311,10 @@ def _table_reward(table: dict) -> QuestReward | None:
         table.get("MaxIterations"),
         min_iterations,
     )
+
+    if min_amount is not None:
+        min_amount *= min_iterations
+        max_amount *= max_iterations
 
     per_roll = min_iterations != max_iterations
 
@@ -389,6 +483,7 @@ def _step_npc(step_object: dict) -> str:
 
 def _required_npcs(obj: dict) -> tuple[str, ...]:
     properties = obj.get("Properties")
+
     values = (
         properties.get("RequiredNpcsForQuestToBeVisible")
         if isinstance(properties, dict)
@@ -405,6 +500,29 @@ def _required_npcs(obj: dict) -> tuple[str, ...]:
 
         if npc and npc not in result:
             result.append(npc)
+
+    return tuple(result)
+
+
+def _required_quests(obj: dict) -> tuple[str, ...]:
+    properties = obj.get("Properties")
+
+    values = (
+        properties.get("RequiresCompletedQuestsToBeVisible")
+        if isinstance(properties, dict)
+        else None
+    )
+
+    if not isinstance(values, list):
+        return ()
+
+    result = []
+
+    for value in values:
+        quest = _asset_class_name(value)
+
+        if quest and quest not in result:
+            result.append(quest)
 
     return tuple(result)
 
@@ -446,6 +564,7 @@ def _resolve_steps(
                 summary=_description(step_object),
                 completion_text=_text(properties.get("CompletionText")),
                 type=quest_type,
+                optional="optional" in quest_type.casefold(),
                 group_next=group_next,
                 items=_items(step_object),
                 npc=_step_npc(step_object),
@@ -455,37 +574,11 @@ def _resolve_steps(
     return tuple(steps)
 
 
-def _quest_npcs(
-    quest_object: dict,
-    steps: tuple[QuestStep, ...],
-    giver: str,
-) -> tuple[str, ...]:
-    result = []
-
-    for npc in _required_npcs(quest_object):
-        if npc and npc.casefold() != giver.casefold():
-            if npc not in result:
-                result.append(npc)
-
-    for step in steps:
-        if (
-            step.npc
-            and step.npc.casefold() != giver.casefold()
-            and step.npc not in result
-        ):
-            result.append(step.npc)
-
-    return tuple(result)
-
-
-def parse_quest(
-    path: Path,
-    relative_path: Path,
-    category: str,
+def quest_name_and_title(
     objects: list[dict],
-    directory_objects: ObjectIndex,
-) -> Quest | None:
-    """Parse a root quest from loaded Unreal objects."""
+    fallback_name: str,
+) -> tuple[str, str] | None:
+    """Return the root quest name and display title from loaded objects."""
     quest_object = _quest_object(objects)
 
     if quest_object is None:
@@ -499,17 +592,66 @@ def parse_quest(
     if not isinstance(properties.get("Subquests"), list):
         return None
 
-    name = _usable_object_name(_object_name(quest_object)) or path.stem
+    name = _usable_object_name(_object_name(quest_object)) or fallback_name
     title = _text(properties.get("Title")) or name
+
+    return name, title
+
+
+def parse_quest(
+    path: Path,
+    relative_path: Path,
+    category: str,
+    objects: list[dict],
+    directory_objects: ObjectIndex,
+    quest_titles: dict[str, str],
+) -> Quest | None:
+    """Parse a root quest from loaded Unreal objects."""
+    quest_identity = quest_name_and_title(
+        objects,
+        path.stem,
+    )
+
+    if quest_identity is None:
+        return None
+
+    name, title = quest_identity
 
     steps = _resolve_steps(
         name,
         title,
-        _subquests(quest_object),
+        _subquests(_quest_object(objects)),
         directory_objects,
     )
 
-    giver = _npc_name(properties.get("DefaultQuestGiverRef"))
+    properties = _quest_object(objects).get("Properties")
+
+    if not isinstance(properties, dict):
+        return None
+
+    required_npc_values = properties.get("RequiredNpcsForQuestToBeVisible")
+
+    if not isinstance(required_npc_values, list):
+        required_npc_values = []
+
+    giver = _npc_name_from_required_npcs(
+        properties.get("DefaultQuestGiverRef"),
+        required_npc_values,
+    )
+
+    difficulty = properties.get("Difficulty")
+    difficulty = _enum_name(difficulty)
+
+    village_trust_requirement = properties.get("RequiresVillageTrustLevel")
+
+    if isinstance(village_trust_requirement, dict):
+        village_trust_requirement = village_trust_requirement.get("TrustLevel")
+
+    village_trust_requirement = _enum_name(village_trust_requirement)
+
+    village_liberation_requirement = bool(
+        properties.get("RequiresVillageLiberatedToBeVisible")
+    )
 
     parts = relative_path.parts
     category_index = next(
@@ -518,6 +660,14 @@ def parse_quest(
         if part.casefold() == category.casefold()
     )
 
+    required_quests = []
+
+    for quest in _required_quests(_quest_object(objects)):
+        resolved = quest_titles.get(quest.casefold(), quest)
+
+        if resolved not in required_quests:
+            required_quests.append(resolved)
+
     return Quest(
         name=name,
         category=category,
@@ -525,15 +675,16 @@ def parse_quest(
         relative_path=tuple(parts[category_index + 1 : -1]),
         title=title,
         summary=_text(properties.get("Summary")),
+        difficulty=difficulty,
+        village_trust_requirement=village_trust_requirement,
+        village_liberation_requirement=village_liberation_requirement,
+        required_npcs=_required_npcs(_quest_object(objects)),
+        required_quests=tuple(required_quests),
         giver=giver,
-        npcs=_quest_npcs(
-            quest_object,
-            steps,
-            giver,
-        ),
         steps=steps,
-        rewards=_rewards(quest_object),
+        rewards=_rewards(_quest_object(objects)),
         money_reward=_int(properties.get("MoneyReward")),
         renown_reward=_int(properties.get("RenownReward")),
         village_trust_reward=_int(properties.get("VillageTrustReward")),
+        village_prosperity_reward=_int(properties.get("VillageProsperityReward")),
     )

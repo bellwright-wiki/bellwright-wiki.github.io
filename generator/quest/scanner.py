@@ -1,5 +1,6 @@
 """Discover root quests and resolve their ordered subquests."""
 
+from dataclasses import replace
 from pathlib import Path
 
 from .cache import QUEST_ROOT, QuestCache
@@ -50,6 +51,32 @@ def _sort_quests(
         )
 
 
+def _resolve_path_collisions(
+    quests_by_category: dict[str, list[Quest]],
+) -> None:
+    """Give root quests sharing a source directory distinct tree paths."""
+    for quests in quests_by_category.values():
+        counts: dict[tuple[str, ...], int] = {}
+
+        for quest in quests:
+            counts[quest.relative_path] = (
+                counts.get(
+                    quest.relative_path,
+                    0,
+                )
+                + 1
+            )
+
+        for index, quest in enumerate(quests):
+            if counts[quest.relative_path] < 2:
+                continue
+
+            quests[index] = replace(
+                quest,
+                relative_path=quest.relative_path + (quest.source.stem,),
+            )
+
+
 def discover_quests(
     assets: Path,
 ) -> dict[str, list[Quest]]:
@@ -59,6 +86,7 @@ def discover_quests(
 
     cache = QuestCache(assets)
     directory_indexes: dict[Path, ObjectIndex] = cache.directory_indexes()
+    quest_titles = cache.quest_titles()
 
     for path in cache.paths():
         try:
@@ -83,11 +111,14 @@ def discover_quests(
                 path.parent,
                 {},
             ),
+            quest_titles=quest_titles,
         )
 
         if quest is not None:
             quests_by_category[category].append(quest)
 
+    _sort_quests(quests_by_category)
+    _resolve_path_collisions(quests_by_category)
     _sort_quests(quests_by_category)
 
     return quests_by_category

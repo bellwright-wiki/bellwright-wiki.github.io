@@ -166,7 +166,7 @@
 }
 
 .site-search #search-input {
-  width: min(20rem, 40vw);
+  width: min(16rem, 32vw);
   padding: 0.5rem 1rem 0.5rem 2.25rem;
 }
 
