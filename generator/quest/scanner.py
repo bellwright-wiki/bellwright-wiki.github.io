@@ -59,7 +59,13 @@ def _resolve_path_collisions(
         counts: dict[tuple[str, ...], int] = {}
 
         for quest in quests:
-            counts[quest.relative_path] = counts.get(quest.relative_path, 0) + 1
+            counts[quest.relative_path] = (
+                counts.get(
+                    quest.relative_path,
+                    0,
+                )
+                + 1
+            )
 
         for index, quest in enumerate(quests):
             if counts[quest.relative_path] < 2:
@@ -80,6 +86,7 @@ def discover_quests(
 
     cache = QuestCache(assets)
     directory_indexes: dict[Path, ObjectIndex] = cache.directory_indexes()
+    quest_titles = cache.quest_titles()
 
     for path in cache.paths():
         try:
@@ -104,6 +111,7 @@ def discover_quests(
                 path.parent,
                 {},
             ),
+            quest_titles=quest_titles,
         )
 
         if quest is not None:

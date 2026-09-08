@@ -574,14 +574,11 @@ def _resolve_steps(
     return tuple(steps)
 
 
-def parse_quest(
-    path: Path,
-    relative_path: Path,
-    category: str,
+def quest_name_and_title(
     objects: list[dict],
-    directory_objects: ObjectIndex,
-) -> Quest | None:
-    """Parse a root quest from loaded Unreal objects."""
+    fallback_name: str,
+) -> tuple[str, str] | None:
+    """Return the root quest name and display title from loaded objects."""
     quest_object = _quest_object(objects)
 
     if quest_object is None:
@@ -595,15 +592,42 @@ def parse_quest(
     if not isinstance(properties.get("Subquests"), list):
         return None
 
-    name = _usable_object_name(_object_name(quest_object)) or path.stem
+    name = _usable_object_name(_object_name(quest_object)) or fallback_name
     title = _text(properties.get("Title")) or name
+
+    return name, title
+
+
+def parse_quest(
+    path: Path,
+    relative_path: Path,
+    category: str,
+    objects: list[dict],
+    directory_objects: ObjectIndex,
+    quest_titles: dict[str, str],
+) -> Quest | None:
+    """Parse a root quest from loaded Unreal objects."""
+    quest_identity = quest_name_and_title(
+        objects,
+        path.stem,
+    )
+
+    if quest_identity is None:
+        return None
+
+    name, title = quest_identity
 
     steps = _resolve_steps(
         name,
         title,
-        _subquests(quest_object),
+        _subquests(_quest_object(objects)),
         directory_objects,
     )
+
+    properties = _quest_object(objects).get("Properties")
+
+    if not isinstance(properties, dict):
+        return None
 
     required_npc_values = properties.get("RequiredNpcsForQuestToBeVisible")
 
@@ -636,6 +660,14 @@ def parse_quest(
         if part.casefold() == category.casefold()
     )
 
+    required_quests = []
+
+    for quest in _required_quests(_quest_object(objects)):
+        resolved = quest_titles.get(quest.casefold(), quest)
+
+        if resolved not in required_quests:
+            required_quests.append(resolved)
+
     return Quest(
         name=name,
         category=category,
@@ -646,11 +678,11 @@ def parse_quest(
         difficulty=difficulty,
         village_trust_requirement=village_trust_requirement,
         village_liberation_requirement=village_liberation_requirement,
-        required_npcs=_required_npcs(quest_object),
-        required_quests=_required_quests(quest_object),
+        required_npcs=_required_npcs(_quest_object(objects)),
+        required_quests=tuple(required_quests),
         giver=giver,
         steps=steps,
-        rewards=_rewards(quest_object),
+        rewards=_rewards(_quest_object(objects)),
         money_reward=_int(properties.get("MoneyReward")),
         renown_reward=_int(properties.get("RenownReward")),
         village_trust_reward=_int(properties.get("VillageTrustReward")),
