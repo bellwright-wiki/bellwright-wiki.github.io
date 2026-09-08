@@ -124,6 +124,57 @@ def _npc_name(value) -> str:
     return " ".join(_split_words(name)).strip()
 
 
+def _npc_template_key(value) -> str:
+    if not isinstance(value, dict):
+        return ""
+
+    template = value.get("TemplateClass")
+
+    if not isinstance(template, dict):
+        return ""
+
+    object_path = template.get("ObjectPath")
+
+    if isinstance(object_path, str) and object_path:
+        return object_path
+
+    object_name = template.get("ObjectName")
+
+    if isinstance(object_name, str) and object_name:
+        return object_name
+
+    return ""
+
+
+def _npc_name_from_required_npcs(
+    value: dict,
+    required_npcs: list[dict],
+) -> str:
+    npc = _npc_name(value)
+
+    if npc:
+        return npc
+
+    template_key = _npc_template_key(value)
+
+    if not template_key:
+        return ""
+
+    for required_npc in required_npcs:
+        if not isinstance(required_npc, dict):
+            continue
+
+        if _npc_template_key(required_npc) != template_key:
+            continue
+
+        npc = _npc_name(required_npc)
+
+        if npc:
+            return npc
+
+    return ""
+
+
 def _int(value, default: int = 0) -> int:
     if isinstance(value, bool):
         return int(value)
@@ -554,7 +605,15 @@ def parse_quest(
         directory_objects,
     )
 
-    giver = _npc_name(properties.get("DefaultQuestGiverRef"))
+    required_npc_values = properties.get("RequiredNpcsForQuestToBeVisible")
+
+    if not isinstance(required_npc_values, list):
+        required_npc_values = []
+
+    giver = _npc_name_from_required_npcs(
+        properties.get("DefaultQuestGiverRef"),
+        required_npc_values,
+    )
 
     difficulty = properties.get("Difficulty")
     difficulty = _enum_name(difficulty)
