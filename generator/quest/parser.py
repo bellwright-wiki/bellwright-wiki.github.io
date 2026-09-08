@@ -29,6 +29,15 @@ def _quest_object(objects: list[dict]) -> dict | None:
         if isinstance(value, str) and "quest" in value.casefold():
             return obj
 
+    for obj in objects:
+        properties = obj.get("Properties")
+
+        if not isinstance(properties, dict):
+            continue
+
+        if isinstance(properties.get("Subquests"), list):
+            return obj
+
     return None
 
 
