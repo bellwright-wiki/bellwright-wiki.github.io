@@ -97,13 +97,17 @@ def _write_quest_overview(
     if not quest.giver and not quest.difficulty and not requirements:
         return
 
+    difficulty = _escape_table_cell(quest.difficulty)
+    giver = _escape_table_cell(quest.giver)
+    requirements_text = _escape_table_cell("<br>".join(requirements))
+
     lines.extend(
         [
             "## Quest Overview",
             "",
             "| Difficulty | Giver | Requirements |",
             "|---|---|---|",
-            f"| {quest.difficulty} | {quest.giver} | {'<br>'.join(requirements)} |",
+            f"| {difficulty} | {giver} | {requirements_text} |",
             "",
         ]
     )
